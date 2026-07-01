@@ -97,6 +97,60 @@
   button.play:hover{ filter:brightness(1.06); }
   button.play:active{ transform:translateY(2px) scale(.98); }
   .hint{ font-size:12px; opacity:.6; margin-top:12px; }
+
+  /* ---------- extra HUD ---------- */
+  #scoreBox .alg{ font-size:13px; margin-top:3px; color:#bff6d8; font-weight:600; }
+
+  /* ---------- start actions / wallet ---------- */
+  .walletline{ display:flex; gap:16px; justify-content:center; margin-top:16px; font-size:14px; opacity:.92; }
+  .walletline b{ color:var(--accent); }
+  .actions{ display:flex; flex-direction:column; gap:10px; align-items:center; margin-top:14px; }
+  .actions button.play{ margin-top:0; width:100%; max-width:320px; }
+  button.play.secondary{
+    font-size:17px; padding:12px 30px; color:#eaf6ff;
+    background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.07));
+    box-shadow:0 6px 18px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.22);
+  }
+
+  /* ---------- shop ---------- */
+  .card.shop{ max-width:540px; }
+  .shop-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .title.small{ font-size:26px; }
+  .wallet{ display:flex; gap:14px; font-size:15px; white-space:nowrap; }
+  .wallet b{ color:var(--accent); }
+  .tabs{ display:flex; gap:6px; margin:16px 0 12px; flex-wrap:wrap; justify-content:center; }
+  .tab{
+    cursor:pointer; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06);
+    color:#fff; font-family:var(--font); font-size:13px; padding:8px 12px; border-radius:12px; transition:.12s;
+  }
+  .tab:hover{ background:rgba(255,255,255,.12); }
+  .tab.active{ background:linear-gradient(180deg,#7ff0dc,#2bc7ad); color:#06304f; border-color:transparent; font-weight:700; }
+  .grid{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
+    max-height:54vh; overflow-y:auto; padding:4px 4px 2px;
+  }
+  @media(min-width:480px){ .grid{ grid-template-columns:repeat(3,1fr); } }
+  .item{
+    position:relative; background:rgba(255,255,255,.06); border:2px solid rgba(255,255,255,.10);
+    border-radius:16px; padding:10px; display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .item.selected{ border-color:var(--accent2); box-shadow:0 0 0 2px rgba(56,224,200,.35), 0 8px 20px rgba(0,0,0,.3); }
+  .item.locked .pv{ filter:saturate(.55) brightness(.8); }
+  .item .pv{ width:100%; height:74px; border-radius:12px; background:rgba(0,0,0,.20); display:block; }
+  .item .iname{ font-size:14px; font-weight:600; text-align:center; line-height:1.1; }
+  .item .icond{ font-size:11.5px; opacity:.85; min-height:15px; text-align:center; }
+  .item .lock{ position:absolute; top:8px; right:9px; font-size:15px; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+  .ibtn{
+    cursor:pointer; font-family:var(--font); font-weight:700; font-size:13px; border:none;
+    border-radius:999px; padding:8px 10px; width:100%; color:#06304f;
+    background:linear-gradient(180deg,#7ff0dc,#2bc7ad);
+  }
+  .ibtn.owned{ background:rgba(255,255,255,.16); color:#fff; }
+  .ibtn.active{ background:transparent; color:var(--accent2); border:1px solid var(--accent2); cursor:default; }
+  .ibtn.buy{ background:linear-gradient(180deg,#ffe08a,#f0b830); color:#4a3400; }
+  .ibtn.locked{ background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); cursor:not-allowed; }
+  .stat{ font-size:12px; opacity:.72; margin-top:12px; }
+  .stat b{ color:var(--accent2); }
 </style>
 </head>
 <body>
@@ -108,6 +162,7 @@
       <div class="lbl">Punkte</div>
       <div class="val" id="scoreVal">0</div>
       <div class="hi">🏆 Best: <span id="hiVal">0</span></div>
+      <div class="alg">🌿 <span id="algVal">0</span></div>
     </div>
     <div class="right">
       <div id="muteBtn" title="Ton an/aus">🔊</div>
@@ -134,7 +189,11 @@
         <div class="item"><span class="dot" style="background:#43d17a"></span>Alge — sammeln (+25)</div>
       </div>
 
-      <button class="play" id="startBtn">Los geht's!</button>
+      <div class="walletline">🌿 Algen: <b id="startBalance">0</b> · 🏆 Highscore: <b id="startHi">0</b></div>
+      <div class="actions">
+        <button class="play" id="startBtn">Los geht's!</button>
+        <button class="play secondary" id="shopBtn">🛍️ Kosmetik-Shop</button>
+      </div>
       <div class="hint">Tipp: Fische kommen auf mittlerer Höhe — weiche nach oben, unten oder zur Seite aus.</div>
     </div>
   </div>
@@ -146,10 +205,31 @@
       <div class="scoreline">Punkte: <b id="finalScore">0</b></div>
       <div class="scoreline">Highscore: <b id="finalHi">0</b></div>
       <div id="newBestBadge" class="newbest" style="display:none">🎉 Neuer Rekord!</div>
-      <div>
+      <div class="scoreline" id="earnedLine">🌿 Gesammelt: <b id="earnedAlgae">0</b></div>
+      <div class="actions">
         <button class="play" id="restartBtn">Nochmal spielen</button>
+        <button class="play secondary" id="menuBtn">🏠 Menü &amp; Shop</button>
       </div>
       <div class="hint">Drücke <b>Leertaste</b> oder <b>Enter</b> für einen Neustart.</div>
+    </div>
+  </div>
+
+  <!-- Cosmetics / Shop screen -->
+  <div class="overlay hidden" id="shopScreen">
+    <div class="card shop">
+      <div class="shop-head">
+        <div class="title small">🛍️ Kosmetik-Shop</div>
+        <div class="wallet"><span>🌿 <b id="shopBalance">0</b></span><span>🏆 <b id="shopHi">0</b></span></div>
+      </div>
+      <div class="tabs" id="shopTabs">
+        <button class="tab active" data-cat="turtle">🐢 Schildkröte</button>
+        <button class="tab" data-cat="background">🌊 Hintergrund</button>
+        <button class="tab" data-cat="algae">🌿 Algen</button>
+        <button class="tab" data-cat="obstacle">🐟 Kreaturen</button>
+      </div>
+      <div class="grid" id="shopGrid"></div>
+      <div class="stat">Insgesamt gesammelte Algen: <b id="shopTotal">0</b></div>
+      <button class="play" id="shopBack">Zurück zum Menü</button>
     </div>
   </div>
 </div>
@@ -229,8 +309,90 @@
   let shake = 0;
 
   const FISH_COLORS = ['#ff7043','#ffca28','#ec407a','#26c6da','#ef5350','#ffa726','#5c6bc0'];
+  let runAlgae = 0;   // algae collected in the current run
 
-  try { highscore = parseInt(localStorage.getItem('turtleSurferHi') || '0', 10) || 0; } catch(e){}
+  // -------------------------------------------------------- cosmetics catalog
+  // cond.k: 'free' | 'algae' (cost, buy with balance) | 'score' (score milestone)
+  const COSMETICS = {
+    turtle: [
+      { id:'t_classic', name:'Klassisch', cond:{k:'free'}, shape:'sea',
+        shell:['#8ad17a','#4e9e3f','#2c6a26'], rim:'#b98b3e', flip:'#2f9e6f', flipEdge:'#4bbd86', head:['#5cc98f','#2f9e6f'], scute:'rgba(30,70,25,.55)' },
+      { id:'t_ocean', name:'Ozeanblau', cond:{k:'algae',cost:60}, shape:'sea',
+        shell:['#8fd6ee','#3f9ecf','#1e5f8f'], rim:'#cdd6de', flip:'#2f7f9e', flipEdge:'#5fc0d6', head:['#6fc6da','#2f7f9e'], scute:'rgba(20,50,70,.5)' },
+      { id:'t_sunny', name:'Sonnengelb', cond:{k:'algae',cost:150}, shape:'sea',
+        shell:['#ffe486','#f2b224','#a9760f'], rim:'#a86a12', flip:'#e0a41c', flipEdge:'#ffd24d', head:['#ffd35c','#e0a41c'], scute:'rgba(90,60,10,.5)' },
+      { id:'t_hawksbill', name:'Karettschildkröte', cond:{k:'algae',cost:350}, shape:'sea', pattern:'mosaic',
+        shell:['#e9be74','#a86a2c','#5c3410'], rim:'#3c2408', flip:'#8a5a2a', flipEdge:'#c89658', head:['#c99a5c','#8a5a2a'], scute:'rgba(40,20,5,.7)' },
+      { id:'t_tortoise', name:'Landschildkröte', cond:{k:'score',score:2500}, shape:'tortoise',
+        shell:['#c39a56','#7a5522','#41290f'], rim:'#39240f', flip:'#6f5a34', flipEdge:'#9a8452', head:['#9a8050','#6a5230'], scute:'rgba(40,25,5,.7)' },
+      { id:'t_golden', name:'Goldpanzer', cond:{k:'algae',cost:900}, shape:'sea', glow:'#ffdf6b',
+        shell:['#fff0a0','#f5c518','#a67c00'], rim:'#fff2a8', flip:'#d4af37', flipEdge:'#ffe98a', head:['#f2d360','#c8a020'], scute:'rgba(120,90,0,.45)' },
+      { id:'t_crystal', name:'Kristallpanzer', cond:{k:'score',score:8000}, shape:'sea', glow:'#9fd0ff', sparkle:true,
+        shell:['#cdeeff','#7fb8ff','#4a6fd0'], rim:'#e6f2ff', flip:'#7fa8ff', flipEdge:'#cfe8ff', head:['#a6d4ff','#6f9fe0'], scute:'rgba(255,255,255,.5)' },
+    ],
+    background: [
+      { id:'b_reef', name:'Korallenriff', cond:{k:'free'},
+        sky:[[0,'#48c7f0'],[.28,'#1f92cf'],[.62,'#0d5a97'],[1,'#052a4d']], ray:'rgba(180,235,255,', rayA:.16, surface:.5, floor:['rgba(214,183,120,','rgba(150,120,70,'], decor:'reef' },
+      { id:'b_deep', name:'Tiefsee', cond:{k:'algae',cost:120},
+        sky:[[0,'#0d3f60'],[.4,'#062a45'],[1,'#01121f']], ray:'rgba(120,200,255,', rayA:.06, surface:.14, floor:['rgba(40,60,80,','rgba(10,20,35,'], decor:'deep' },
+      { id:'b_sunset', name:'Sonnenuntergang', cond:{k:'algae',cost:400},
+        sky:[[0,'#ffcf8a'],[.16,'#ff9b6b'],[.4,'#e0608f'],[.7,'#7a4a9e'],[1,'#241a4d']], ray:'rgba(255,210,160,', rayA:.14, surface:.4, floor:['rgba(150,90,90,','rgba(70,40,60,'], decor:'sunset' },
+      { id:'b_cave', name:'Höhle', cond:{k:'score',score:4000},
+        sky:[[0,'#20423f'],[.5,'#102826'],[1,'#050f10']], ray:'rgba(120,220,180,', rayA:.05, surface:.12, floor:['rgba(50,60,55,','rgba(15,25,22,'], decor:'cave' },
+    ],
+    algae: [
+      { id:'a_green',  name:'Klassisch Grün', cond:{k:'free'}, colors:['#2e9c4f','#7bef8f'], glow:'rgba(120,255,170,', shape:'kelp' },
+      { id:'a_pink',   name:'Koralle Pink', cond:{k:'algae',cost:80}, colors:['#c94f8f','#ff9fce'], glow:'rgba(255,150,205,', shape:'coral' },
+      { id:'a_bubble', name:'Blaubeeren', cond:{k:'algae',cost:220}, colors:['#2f6fd0','#8fd0ff'], glow:'rgba(150,205,255,', shape:'round' },
+      { id:'a_golden', name:'Goldalge', cond:{k:'score',score:5000}, colors:['#c8961e','#ffe98a'], glow:'rgba(255,220,120,', shape:'kelp' },
+    ],
+    obstacle: [
+      { id:'o_fish',   name:'Fische', cond:{k:'free'}, style:'fish' },
+      { id:'o_puffer', name:'Kugelfische', cond:{k:'algae',cost:100}, style:'puffer' },
+      { id:'o_jelly',  name:'Quallen', cond:{k:'algae',cost:300}, style:'jelly' },
+      { id:'o_shark',  name:'Haie', cond:{k:'score',score:6000}, style:'shark' },
+    ],
+  };
+  const CATS = ['turtle','background','algae','obstacle'];
+  const DEFAULT_SELECTED = { turtle:'t_classic', background:'b_reef', algae:'a_green', obstacle:'o_fish' };
+
+  // -------------------------------------------------------------- persistence
+  const SAVE_KEY = 'turtleSurferSave';
+  let save = { hi:0, balance:0, total:0, unlocked:{}, selected:Object.assign({},DEFAULT_SELECTED) };
+  function loadGame(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(raw){
+        const p = JSON.parse(raw);
+        save.hi = p.hi|0; save.balance = p.balance|0; save.total = p.total|0;
+        save.unlocked = p.unlocked || {};
+        save.selected = Object.assign({}, DEFAULT_SELECTED, p.selected || {});
+      } else {
+        save.hi = parseInt(localStorage.getItem('turtleSurferHi') || '0', 10) || 0; // migrate
+      }
+    }catch(e){}
+    highscore = save.hi || 0;
+  }
+  function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+
+  function findItem(cat, id){ return COSMETICS[cat].find(i=>i.id===id) || COSMETICS[cat][0]; }
+  function isUnlocked(item){
+    if(item.cond.k==='free') return true;
+    if(item.cond.k==='score') return highscore >= item.cond.score;
+    if(item.cond.k==='algae') return !!save.unlocked[item.id];
+    return false;
+  }
+  const active = { turtle:null, background:null, algae:null, obstacle:null };
+  function resolveActive(){
+    for(const cat of CATS){
+      let item = findItem(cat, save.selected[cat]);
+      if(!isUnlocked(item)){ item = COSMETICS[cat][0]; save.selected[cat] = item.id; }
+      active[cat] = item;
+    }
+  }
+
+  loadGame();
+  resolveActive();
 
   // ------------------------------------------------------------------ audio
   let audioCtx = null, muted = false;
@@ -362,7 +524,7 @@
       else if(k==='arrowup'||k==='w') move('up');
       else if(k==='arrowdown'||k==='s') move('down');
     } else {
-      if(k===' '||k==='enter') startGame();
+      if((k===' '||k==='enter') && shopScreen.classList.contains('hidden')) startGame();
     }
   }, {passive:false});
 
@@ -385,16 +547,18 @@
   const overScreen  = document.getElementById('overScreen');
   const scoreVal = document.getElementById('scoreVal');
   const hiVal = document.getElementById('hiVal');
+  const algVal = document.getElementById('algVal');
   hiVal.textContent = highscore;
 
   function resetGame(){
     obstacles = []; algae = []; popups = [];
     turtle.lane = 1; turtle.band = 1;
     turtle.laneF = 0; turtle.heightF = 1; turtle.tilt = 0; turtle.laneVel = 0;
-    score = 0; speed = 2.2; elapsed = 0;
+    score = 0; speed = 2.2; elapsed = 0; runAlgae = 0;
     obstacleAccum = 0; obstacleGap = 3.0;
     algaeAccum = 0; algaeGap = 2.6;
     hitFlash = 0; shake = 0;
+    scoreVal.textContent = '0'; algVal.textContent = '0';
   }
   function startGame(){
     ensureAudio();
@@ -402,6 +566,7 @@
     state = S_PLAY;
     startScreen.classList.add('hidden');
     overScreen.classList.add('hidden');
+    shopScreen.classList.add('hidden');
   }
   function gameOver(){
     state = S_OVER;
@@ -409,12 +574,16 @@
     sfxHit();
     const finalScore = Math.floor(score);
     const isBest = finalScore > highscore;
-    if(isBest){
-      highscore = finalScore;
-      try{ localStorage.setItem('turtleSurferHi', String(highscore)); }catch(e){}
-    }
+    if(isBest) highscore = finalScore;
+    // bank the algae collected this run (spendable balance + lifetime total)
+    save.balance += runAlgae;
+    save.total   += runAlgae;
+    save.hi = highscore;
+    saveGame();
+    resolveActive();  // a new highscore may unlock milestone cosmetics
     document.getElementById('finalScore').textContent = finalScore;
     document.getElementById('finalHi').textContent = highscore;
+    document.getElementById('earnedAlgae').textContent = runAlgae;
     document.getElementById('newBestBadge').style.display = isBest ? 'inline-block' : 'none';
     hiVal.textContent = highscore;
     setTimeout(()=> overScreen.classList.remove('hidden'), 450);
@@ -456,6 +625,8 @@
         a.taken = true;
         if(a.lane === turtle.lane && a.band === turtle.band){
           score += 25;
+          runAlgae += 1;
+          algVal.textContent = runAlgae;
           const p = project(LANE_X[turtle.lane], turtle.band, 0.02);
           popups.push({ x:p.x, y:p.y - TURTLE_R, life:1, text:'+25' });
           sfxCollect();
@@ -495,20 +666,20 @@
 
   // ------------------------------------------------------------------ draw
   function drawBackground(){
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,   '#48c7f0');
-    g.addColorStop(0.28,'#1f92cf');
-    g.addColorStop(0.62,'#0d5a97');
-    g.addColorStop(1,   '#052a4d');
-    ctx.fillStyle = g;
+    const bg = active.background;
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    for(const st of bg.sky) grad.addColorStop(st[0], st[1]);
+    ctx.fillStyle = grad;
     ctx.fillRect(0,0,W,H);
 
-    // sunlit surface shimmer at very top
+    // surface shimmer at very top
     const sg = ctx.createLinearGradient(0,0,0,H*0.16);
-    sg.addColorStop(0,'rgba(255,255,255,.5)');
+    sg.addColorStop(0,'rgba(255,255,255,'+bg.surface+')');
     sg.addColorStop(1,'rgba(255,255,255,0)');
     ctx.fillStyle = sg;
     ctx.fillRect(0,0,W,H*0.16);
+
+    if(bg.decor==='sunset') drawSun();
 
     // god rays
     ctx.save();
@@ -517,11 +688,11 @@
       const sway = Math.sin(gameTime*r.sp + r.off) * W*0.04;
       const topX = r.x + sway;
       const botX = r.x + sway*2.4 - W*0.05;
-      const grad = ctx.createLinearGradient(0,0,0,H);
-      grad.addColorStop(0,'rgba(180,235,255,.16)');
-      grad.addColorStop(0.6,'rgba(140,215,255,.05)');
-      grad.addColorStop(1,'rgba(140,215,255,0)');
-      ctx.fillStyle = grad;
+      const gr = ctx.createLinearGradient(0,0,0,H);
+      gr.addColorStop(0,   bg.ray + bg.rayA + ')');
+      gr.addColorStop(0.6, bg.ray + (bg.rayA*0.32).toFixed(3) + ')');
+      gr.addColorStop(1,   bg.ray + '0)');
+      ctx.fillStyle = gr;
       ctx.beginPath();
       ctx.moveTo(topX - r.w*0.5, 0);
       ctx.lineTo(topX + r.w*0.5, 0);
@@ -532,14 +703,74 @@
     }
     ctx.restore();
 
-    // seafloor sand band
-    const floorTopY = horizonY + (bottomY - horizonY) * (camDepth/(camDepth+0.15));
+    drawDecor(bg.decor);
+
+    // seafloor band
     const fg = ctx.createLinearGradient(0, bottomY-unitHeight, 0, H);
-    fg.addColorStop(0,'rgba(214,183,120,0)');
-    fg.addColorStop(0.5,'rgba(206,176,116,.5)');
-    fg.addColorStop(1,'rgba(150,120,70,.85)');
+    fg.addColorStop(0,   bg.floor[0] + '0)');
+    fg.addColorStop(0.5, bg.floor[0] + '0.5)');
+    fg.addColorStop(1,   bg.floor[1] + '0.85)');
     ctx.fillStyle = fg;
     ctx.fillRect(0, bottomY-unitHeight*0.6, W, H-(bottomY-unitHeight*0.6));
+  }
+
+  function drawSun(){
+    const cx = W*0.5, cy = H*0.05;
+    const gr = ctx.createRadialGradient(cx,cy,10, cx,cy,H*0.45);
+    gr.addColorStop(0,'rgba(255,244,206,.55)');
+    gr.addColorStop(0.4,'rgba(255,180,120,.22)');
+    gr.addColorStop(1,'rgba(255,150,120,0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.arc(cx,cy,H*0.45,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawDecor(type){
+    if(type==='reef'){
+      ctx.save(); ctx.globalAlpha = 0.5;
+      const cols = ['#0b6e7a','#0d5a97','#14807a'];
+      const baseY = bottomY - unitHeight*0.15;
+      for(let i=0;i<6;i++){
+        const side = i<3 ? W*0.06 + i*W*0.03 : W*0.94 - (i-3)*W*0.03;
+        ctx.fillStyle = cols[i%3];
+        coralBlob(side, baseY, W*(0.028 + 0.018*((i*7)%3)));
+      }
+      ctx.restore();
+    } else if(type==='deep'){
+      for(let i=0;i<40;i++){
+        const x = (i*137.5)%W;
+        const y = H*0.18 + ((i*89.3)%(H*0.72));
+        const tw = 0.3 + 0.5*Math.abs(Math.sin(gameTime*1.5 + i));
+        ctx.fillStyle = 'rgba(120,230,255,'+(tw*0.5).toFixed(2)+')';
+        ctx.beginPath(); ctx.arc(x,y, 1.4*BUBBLE_SCALE+1, 0, Math.PI*2); ctx.fill();
+      }
+    } else if(type==='cave'){
+      ctx.save(); ctx.fillStyle = 'rgba(6,18,16,.92)';
+      for(let i=0;i<7;i++){
+        const x = W*(i/6), w = W*0.05, hgt = H*(0.07 + 0.06*((i*5)%3));
+        ctx.beginPath(); ctx.moveTo(x-w,0); ctx.lineTo(x+w,0); ctx.lineTo(x,hgt); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      for(let i=0;i<14;i++){
+        const x = (i*173)%W, y = H*0.22 + ((i*111)%(H*0.55));
+        const tw = 0.3 + 0.5*Math.abs(Math.sin(gameTime*1.2 + i));
+        ctx.fillStyle = 'rgba(130,255,180,'+(tw*0.4).toFixed(2)+')';
+        ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2); ctx.fill();
+      }
+    } else if(type==='sunset'){
+      ctx.save(); ctx.globalAlpha = 0.16; ctx.fillStyle = '#3a2440';
+      for(let i=0;i<5;i++){
+        const x = (gameTime*8 + i*W*0.24) % (W+80) - 40;
+        const y = H*0.2 + i*18;
+        ctx.beginPath(); ctx.ellipse(x,y,14,6,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x-13,y); ctx.lineTo(x-22,y-6); ctx.lineTo(x-22,y+6); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+  function coralBlob(x,y,s){
+    ctx.beginPath(); ctx.ellipse(x, y-s, s*0.5, s, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x-s*0.6, y-s*0.6, s*0.34, s*0.7,  0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x+s*0.6, y-s*0.7, s*0.34, s*0.8, -0.3, 0, Math.PI*2); ctx.fill();
   }
 
   function drawPath(){
@@ -591,286 +822,385 @@
   }
 
   // ---- shadow helper on floor
-  function floorShadow(x, floorYy, w){
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = '#02203c';
-    ctx.beginPath();
-    ctx.ellipse(x, floorYy, w*0.6, w*0.2, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+  function floorShadow(g, x, floorYy, w){
+    g.save();
+    g.globalAlpha = 0.22;
+    g.fillStyle = '#02203c';
+    g.beginPath();
+    g.ellipse(x, floorYy, w*0.6, w*0.2, 0, 0, Math.PI*2);
+    g.fill();
+    g.restore();
   }
 
-  // ---- Turtle (rear 3/4 view, swimming away up-screen)
-  function drawTurtle(cx, cy, R, tilt){
-    // shadow on seafloor
-    const floorP = project(turtle.laneF, 0, 0.02);
-    floorShadow(floorP.x, floorP.y, R);
+  // ---- Turtle (rear 3/4 view), styled by a skin object
+  function drawTurtle(g, cx, cy, R, tilt, skin){
+    g.save();
+    g.translate(cx, cy);
+    g.rotate(tilt);
+    if(skin.glow){
+      const au = g.createRadialGradient(0,0,R*0.4, 0,0,R*1.6);
+      au.addColorStop(0, hexA(skin.glow,0.45));
+      au.addColorStop(1, hexA(skin.glow,0));
+      g.fillStyle = au; g.beginPath(); g.arc(0,0,R*1.6,0,Math.PI*2); g.fill();
+    }
+    if(skin.shape==='tortoise') drawTortoise(g, R, skin);
+    else drawSeaTurtle(g, R, skin);
+    g.restore();
+  }
 
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(tilt);
+  function drawSeaTurtle(g, R, skin){
     const flap = Math.sin(gameTime*8);
+    drawFlipper(g, -R*0.55, R*0.75, R*0.5, R*0.28, -0.5 + flap*0.25, skin, false);
+    drawFlipper(g,  R*0.55, R*0.75, R*0.5, R*0.28,  0.5 - flap*0.25, skin, true);
+    drawFlipper(g, -R*0.9, -R*0.15, R*0.72, R*0.34, -0.9 - flap*0.3, skin, false);
+    drawFlipper(g,  R*0.9, -R*0.15, R*0.72, R*0.34,  0.9 + flap*0.3, skin, true);
 
-    // ---- rear flippers
-    drawFlipper(-R*0.55, R*0.75, R*0.5, R*0.28, -0.5 + flap*0.25, '#2f9e6f');
-    drawFlipper( R*0.55, R*0.75, R*0.5, R*0.28,  0.5 - flap*0.25, '#2f9e6f', true);
+    // head
+    g.save();
+    g.translate(0, -R*1.02 + flap*R*0.04);
+    const hg = g.createRadialGradient(-R*0.1,-R*0.1,R*0.05, 0,0,R*0.42);
+    hg.addColorStop(0, skin.head[0]); hg.addColorStop(1, skin.head[1]);
+    g.fillStyle = hg;
+    g.beginPath(); g.ellipse(0,0,R*0.32,R*0.4,0,0,Math.PI*2); g.fill();
+    g.fillStyle = '#0d2b22';
+    g.beginPath(); g.arc(-R*0.14, R*0.04, R*0.055, 0, Math.PI*2); g.fill();
+    g.beginPath(); g.arc( R*0.14, R*0.04, R*0.055, 0, Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.85)';
+    g.beginPath(); g.arc(-R*0.155, R*0.02, R*0.02, 0, Math.PI*2); g.fill();
+    g.beginPath(); g.arc( R*0.125, R*0.02, R*0.02, 0, Math.PI*2); g.fill();
+    g.restore();
 
-    // ---- front flippers (behind shell)
-    drawFlipper(-R*0.9, -R*0.15, R*0.72, R*0.34, -0.9 - flap*0.3, '#37b57f');
-    drawFlipper( R*0.9, -R*0.15, R*0.72, R*0.34,  0.9 + flap*0.3, '#37b57f', true);
+    // shell
+    const sg = g.createRadialGradient(-R*0.3,-R*0.4,R*0.2, 0,0,R*1.25);
+    sg.addColorStop(0, skin.shell[0]); sg.addColorStop(0.5, skin.shell[1]); sg.addColorStop(1, skin.shell[2]);
+    g.fillStyle = sg;
+    g.beginPath(); g.ellipse(0,0,R,R*1.12,0,0,Math.PI*2); g.fill();
 
-    // ---- head
-    ctx.save();
-    ctx.translate(0, -R*1.02 + flap*R*0.04);
-    const hg = ctx.createRadialGradient(-R*0.1,-R*0.1,R*0.05, 0,0,R*0.42);
-    hg.addColorStop(0,'#5cc98f'); hg.addColorStop(1,'#2f9e6f');
-    ctx.fillStyle = hg;
-    ctx.beginPath(); ctx.ellipse(0, 0, R*0.32, R*0.4, 0, 0, Math.PI*2); ctx.fill();
-    // eyes peeking
-    ctx.fillStyle = '#0d2b22';
-    ctx.beginPath(); ctx.arc(-R*0.14, R*0.04, R*0.055, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc( R*0.14, R*0.04, R*0.055, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
-    ctx.beginPath(); ctx.arc(-R*0.155, R*0.02, R*0.02, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc( R*0.125, R*0.02, R*0.02, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
+    g.lineWidth = R*0.1; g.strokeStyle = skin.rim;
+    g.beginPath(); g.ellipse(0,0,R*0.97,R*1.09,0,0,Math.PI*2); g.stroke();
 
-    // ---- shell
-    const sg = ctx.createRadialGradient(-R*0.3,-R*0.4,R*0.2, 0,0,R*1.25);
-    sg.addColorStop(0,'#8ad17a');
-    sg.addColorStop(0.5,'#4e9e3f');
-    sg.addColorStop(1,'#2c6a26');
-    ctx.fillStyle = sg;
-    ctx.beginPath(); ctx.ellipse(0, 0, R, R*1.12, 0, 0, Math.PI*2); ctx.fill();
-
-    // shell rim
-    ctx.lineWidth = R*0.1;
-    ctx.strokeStyle = '#b98b3e';
-    ctx.beginPath(); ctx.ellipse(0, 0, R*0.97, R*1.09, 0, 0, Math.PI*2); ctx.stroke();
-
-    // scute plates
-    ctx.strokeStyle = 'rgba(30,70,25,.55)';
-    ctx.lineWidth = Math.max(1, R*0.05);
-    // central hexagon
-    ctx.beginPath();
-    for(let i=0;i<6;i++){
-      const a = Math.PI/2 + i*Math.PI/3;
-      const px = Math.cos(a)*R*0.34, py = Math.sin(a)*R*0.4;
-      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    g.strokeStyle = skin.scute; g.lineWidth = Math.max(1, R*0.05);
+    g.beginPath();
+    for(let i=0;i<6;i++){ const a=Math.PI/2+i*Math.PI/3; const px=Math.cos(a)*R*0.34, py=Math.sin(a)*R*0.4; if(i===0)g.moveTo(px,py); else g.lineTo(px,py); }
+    g.closePath(); g.stroke();
+    for(let i=0;i<6;i++){ const a=Math.PI/2+i*Math.PI/3+Math.PI/6; g.beginPath(); g.moveTo(Math.cos(a)*R*0.36,Math.sin(a)*R*0.42); g.lineTo(Math.cos(a)*R*0.9,Math.sin(a)*R*1.0); g.stroke(); }
+    if(skin.pattern==='mosaic'){
+      g.lineWidth = Math.max(1, R*0.035);
+      for(let i=0;i<6;i++){ const a=Math.PI/2+i*Math.PI/3; g.beginPath(); g.ellipse(Math.cos(a)*R*0.62,Math.sin(a)*R*0.68, R*0.15,R*0.19, a, 0,Math.PI*2); g.stroke(); }
     }
-    ctx.closePath(); ctx.stroke();
-    // radiating lines to outer plates
-    for(let i=0;i<6;i++){
-      const a = Math.PI/2 + i*Math.PI/3 + Math.PI/6;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a)*R*0.36, Math.sin(a)*R*0.42);
-      ctx.lineTo(Math.cos(a)*R*0.9, Math.sin(a)*R*1.0);
-      ctx.stroke();
-    }
-    // highlight
-    ctx.fillStyle = 'rgba(255,255,255,.22)';
-    ctx.beginPath(); ctx.ellipse(-R*0.32, -R*0.4, R*0.28, R*0.18, -0.5, 0, Math.PI*2); ctx.fill();
-
-    ctx.restore();
-  }
-  function drawFlipper(x, y, w, h, angle, color, mirror){
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-    const g = ctx.createLinearGradient(0,0,mirror? w: -w,0);
-    g.addColorStop(0,'#4bbd86'); g.addColorStop(1, color);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, w, h, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+    g.fillStyle = 'rgba(255,255,255,.22)';
+    g.beginPath(); g.ellipse(-R*0.32,-R*0.4,R*0.28,R*0.18,-0.5,0,Math.PI*2); g.fill();
+    if(skin.sparkle) shellSparkles(g, R);
   }
 
-  // ---- Fish (oncoming, front-ish view)
-  function drawFish(cx, cy, S, color, seed){
-    ctx.save();
-    ctx.translate(cx, cy);
-    const wig = Math.sin(gameTime*9 + seed);
-    ctx.rotate(wig*0.06);
-    const bw = S*0.42, bh = S*0.6;
-
-    // tail (top, into screen)
-    ctx.fillStyle = shade(color, -18);
-    ctx.beginPath();
-    const tx = wig*S*0.12;
-    ctx.moveTo(0, -bh*0.75);
-    ctx.lineTo(-S*0.3 + tx, -bh*1.25);
-    ctx.lineTo( S*0.3 + tx, -bh*1.25);
-    ctx.closePath(); ctx.fill();
-
-    // side fins
-    ctx.fillStyle = shade(color, -10);
-    ctx.beginPath(); ctx.ellipse(-bw*0.9, 0, S*0.16, S*0.09, wig*0.3+0.4, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse( bw*0.9, 0, S*0.16, S*0.09, -wig*0.3-0.4, 0, Math.PI*2); ctx.fill();
-
-    // body
-    const g = ctx.createLinearGradient(0,-bh,0,bh);
-    g.addColorStop(0, shade(color, 25));
-    g.addColorStop(1, shade(color, -12));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.ellipse(0, 0, bw, bh, 0, 0, Math.PI*2); ctx.fill();
-
-    // belly stripe
-    ctx.fillStyle = 'rgba(255,255,255,.25)';
-    ctx.beginPath(); ctx.ellipse(0, bh*0.35, bw*0.55, bh*0.35, 0, 0, Math.PI*2); ctx.fill();
-
-    // eyes (facing camera, lower)
-    const ey = bh*0.28, ex = bw*0.42, er = S*0.11;
+  function drawTortoise(g, R, skin){
+    const flap = Math.sin(gameTime*5)*0.5;
+    g.fillStyle = skin.flip;
     for(const s of [-1,1]){
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(s*ex, ey, er, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#10222b';
-      ctx.beginPath(); ctx.arc(s*ex + s*er*0.15, ey + er*0.1, er*0.5, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,.9)';
-      ctx.beginPath(); ctx.arc(s*ex - er*0.2, ey - er*0.2, er*0.18, 0, Math.PI*2); ctx.fill();
+      g.save(); g.translate(s*R*0.66, -R*0.32); g.rotate(s*(0.3+flap*0.12));
+      g.beginPath(); g.ellipse(0,0,R*0.26,R*0.18,0,0,Math.PI*2); g.fill(); g.restore();
+      g.save(); g.translate(s*R*0.6, R*0.62); g.rotate(-s*(0.3-flap*0.12));
+      g.beginPath(); g.ellipse(0,0,R*0.24,R*0.17,0,0,Math.PI*2); g.fill(); g.restore();
     }
-    // mouth
-    ctx.strokeStyle = 'rgba(40,20,20,.6)'; ctx.lineWidth = Math.max(1,S*0.03);
-    ctx.beginPath(); ctx.arc(0, bh*0.62, bw*0.28, 0.15*Math.PI, 0.85*Math.PI); ctx.stroke();
+    // head
+    g.save(); g.translate(0,-R*0.98 + flap*R*0.03);
+    const hg = g.createRadialGradient(-R*0.08,-R*0.08,R*0.04, 0,0,R*0.34);
+    hg.addColorStop(0, skin.head[0]); hg.addColorStop(1, skin.head[1]);
+    g.fillStyle = hg; g.beginPath(); g.ellipse(0,0,R*0.28,R*0.34,0,0,Math.PI*2); g.fill();
+    g.fillStyle = '#0d2b22';
+    g.beginPath(); g.arc(-R*0.12,R*0.02,R*0.05,0,Math.PI*2); g.fill();
+    g.beginPath(); g.arc( R*0.12,R*0.02,R*0.05,0,Math.PI*2); g.fill();
+    g.restore();
+    // high domed shell
+    const sg = g.createRadialGradient(-R*0.25,-R*0.4,R*0.15, 0,0,R*1.2);
+    sg.addColorStop(0, skin.shell[0]); sg.addColorStop(0.5, skin.shell[1]); sg.addColorStop(1, skin.shell[2]);
+    g.fillStyle = sg;
+    g.beginPath(); g.ellipse(0,0,R*1.02,R*1.0,0,0,Math.PI*2); g.fill();
+    g.lineWidth = R*0.09; g.strokeStyle = skin.rim;
+    g.beginPath(); g.ellipse(0,0,R*0.99,R*0.97,0,0,Math.PI*2); g.stroke();
+    g.strokeStyle = skin.scute; g.lineWidth = Math.max(1, R*0.05);
+    drawHexPlate(g,0,0,R*0.32);
+    for(let i=0;i<6;i++){ const a=Math.PI/6+i*Math.PI/3; drawHexPlate(g, Math.cos(a)*R*0.6, Math.sin(a)*R*0.58, R*0.25); }
+    g.fillStyle = 'rgba(255,255,255,.18)';
+    g.beginPath(); g.ellipse(-R*0.3,-R*0.4,R*0.26,R*0.16,-0.5,0,Math.PI*2); g.fill();
+    if(skin.sparkle) shellSparkles(g, R);
+  }
+  function drawHexPlate(g,cx,cy,r){
+    g.beginPath();
+    for(let i=0;i<6;i++){ const a=Math.PI/2+i*Math.PI/3; const px=cx+Math.cos(a)*r, py=cy+Math.sin(a)*r*1.05; if(i===0)g.moveTo(px,py); else g.lineTo(px,py); }
+    g.closePath(); g.stroke();
+  }
+  function shellSparkles(g,R){
+    for(let i=0;i<4;i++){
+      const a = gameTime*1.5 + i*1.7, rr = R*0.5;
+      const tw = 0.4 + 0.6*Math.abs(Math.sin(gameTime*4 + i));
+      g.fillStyle = 'rgba(255,255,255,'+tw.toFixed(2)+')';
+      star(g, Math.cos(a)*rr, Math.sin(a)*rr*1.1, R*0.09, R*0.03);
+    }
+  }
 
-    ctx.restore();
+  function drawFlipper(g, x, y, w, h, angle, skin, mirror){
+    g.save();
+    g.translate(x, y);
+    g.rotate(angle);
+    const grad = g.createLinearGradient(0,0, mirror? w : -w, 0);
+    grad.addColorStop(0, skin.flipEdge); grad.addColorStop(1, skin.flip);
+    g.fillStyle = grad;
+    g.beginPath(); g.ellipse(0,0,w,h,0,0,Math.PI*2); g.fill();
+    g.restore();
+  }
+
+  // ---- Oncoming creature (styled obstacle: fish / puffer / jelly / shark)
+  function drawFish(g, cx, cy, S, color, seed, style){
+    g.save();
+    g.translate(cx, cy);
+    if(style==='puffer') drawPuffer(g,S,color,seed);
+    else if(style==='jelly') drawJelly(g,S,color,seed);
+    else if(style==='shark') drawShark(g,S,seed);
+    else drawFishBody(g,S,color,seed);
+    g.restore();
+  }
+
+  function drawFishBody(g,S,color,seed){
+    const wig = Math.sin(gameTime*9 + seed);
+    g.save(); g.rotate(wig*0.06);
+    const bw = S*0.42, bh = S*0.6;
+    g.fillStyle = shade(color,-18);
+    const tx = wig*S*0.12;
+    g.beginPath(); g.moveTo(0,-bh*0.75); g.lineTo(-S*0.3+tx,-bh*1.25); g.lineTo(S*0.3+tx,-bh*1.25); g.closePath(); g.fill();
+    g.fillStyle = shade(color,-10);
+    g.beginPath(); g.ellipse(-bw*0.9,0,S*0.16,S*0.09,wig*0.3+0.4,0,Math.PI*2); g.fill();
+    g.beginPath(); g.ellipse( bw*0.9,0,S*0.16,S*0.09,-wig*0.3-0.4,0,Math.PI*2); g.fill();
+    const grad = g.createLinearGradient(0,-bh,0,bh);
+    grad.addColorStop(0, shade(color,25)); grad.addColorStop(1, shade(color,-12));
+    g.fillStyle = grad; g.beginPath(); g.ellipse(0,0,bw,bh,0,0,Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.25)';
+    g.beginPath(); g.ellipse(0,bh*0.35,bw*0.55,bh*0.35,0,0,Math.PI*2); g.fill();
+    creatureEyes(g, bw*0.42, bh*0.28, S*0.11);
+    g.strokeStyle = 'rgba(40,20,20,.6)'; g.lineWidth = Math.max(1,S*0.03);
+    g.beginPath(); g.arc(0, bh*0.62, bw*0.28, 0.15*Math.PI, 0.85*Math.PI); g.stroke();
+    g.restore();
+  }
+  function creatureEyes(g, ex, ey, er){
+    for(const s of [-1,1]){
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(s*ex,ey,er,0,Math.PI*2); g.fill();
+      g.fillStyle = '#10222b'; g.beginPath(); g.arc(s*ex+s*er*0.15,ey+er*0.1,er*0.5,0,Math.PI*2); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.arc(s*ex-er*0.2,ey-er*0.2,er*0.18,0,Math.PI*2); g.fill();
+    }
+  }
+
+  function drawPuffer(g,S,color,seed){
+    const puff = 1 + Math.sin(gameTime*4 + seed)*0.05;
+    const r = S*0.48*puff;
+    g.fillStyle = shade(color,-14);
+    const n = 14;
+    for(let i=0;i<n;i++){
+      const a = (i/n)*Math.PI*2;
+      g.beginPath();
+      g.moveTo(Math.cos(a-0.13)*r, Math.sin(a-0.13)*r);
+      g.lineTo(Math.cos(a)*r*1.34, Math.sin(a)*r*1.34);
+      g.lineTo(Math.cos(a+0.13)*r, Math.sin(a+0.13)*r);
+      g.closePath(); g.fill();
+    }
+    const grad = g.createRadialGradient(-r*0.3,-r*0.3,r*0.1, 0,0,r);
+    grad.addColorStop(0, shade(color,30)); grad.addColorStop(1, shade(color,-8));
+    g.fillStyle = grad; g.beginPath(); g.arc(0,0,r,0,Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.22)'; g.beginPath(); g.ellipse(0,r*0.35,r*0.6,r*0.3,0,0,Math.PI*2); g.fill();
+    creatureEyes(g, r*0.42, r*0.05, S*0.11);
+    g.strokeStyle = 'rgba(40,20,20,.6)'; g.lineWidth = Math.max(1,S*0.03);
+    g.beginPath(); g.arc(0, r*0.5, r*0.2, 0.1*Math.PI, 0.9*Math.PI); g.stroke();
+  }
+
+  function drawJelly(g,S,color,seed){
+    const sway = Math.sin(gameTime*2 + seed);
+    const r = S*0.42;
+    const gl = g.createRadialGradient(0,-r*0.2,r*0.2, 0,-r*0.2,r*1.4);
+    gl.addColorStop(0, hexA(color,0.4)); gl.addColorStop(1, hexA(color,0));
+    g.fillStyle = gl; g.beginPath(); g.arc(0,-r*0.2,r*1.4,0,Math.PI*2); g.fill();
+    g.strokeStyle = hexA(color,0.75); g.lineWidth = Math.max(1.5,S*0.05); g.lineCap='round';
+    for(let i=0;i<6;i++){ const x=(i-2.5)*r*0.3; g.beginPath(); g.moveTo(x,0); g.quadraticCurveTo(x+sway*S*0.1, S*0.35, x+sway*S*0.2, S*0.72); g.stroke(); }
+    const grad = g.createLinearGradient(0,-r*1.5,0,r*0.4);
+    grad.addColorStop(0, shadeA(color,40,0.95)); grad.addColorStop(1, hexA(color,0.72));
+    g.fillStyle = grad;
+    g.beginPath(); g.moveTo(-r,0); g.quadraticCurveTo(-r,-r*1.5, 0,-r*1.5); g.quadraticCurveTo(r,-r*1.5, r,0);
+    g.quadraticCurveTo(r*0.5,r*0.3, 0,r*0.22); g.quadraticCurveTo(-r*0.5,r*0.3, -r,0); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.3)'; g.beginPath(); g.ellipse(-r*0.3,-r*0.75,r*0.26,r*0.4,-0.3,0,Math.PI*2); g.fill();
+    for(const s of [-1,1]){ g.fillStyle='#12303a'; g.beginPath(); g.arc(s*r*0.3,-r*0.5,S*0.05,0,Math.PI*2); g.fill(); }
+  }
+
+  function drawShark(g,S,seed){
+    const wig = Math.sin(gameTime*7 + seed);
+    g.save(); g.rotate(wig*0.05);
+    const bw = S*0.44, bh = S*0.66, tx = wig*S*0.14;
+    const grey0='#9fb0bd', grey1='#6b7c8a', grey2='#4a5966';
+    g.fillStyle = grey2;
+    g.beginPath(); g.moveTo(0,-bh*0.7); g.lineTo(-S*0.34+tx,-bh*1.3); g.lineTo(S*0.06+tx,-bh*0.95); g.lineTo(S*0.34+tx,-bh*1.35); g.closePath(); g.fill();
+    g.fillStyle = grey1;
+    g.beginPath(); g.moveTo(-bw*0.7,0); g.lineTo(-bw*1.5,S*0.28); g.lineTo(-bw*0.5,S*0.2); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo( bw*0.7,0); g.lineTo( bw*1.5,S*0.28); g.lineTo( bw*0.5,S*0.2); g.closePath(); g.fill();
+    g.fillStyle = grey2;
+    g.beginPath(); g.moveTo(0,-bh*0.5); g.lineTo(-S*0.06,-bh*0.98); g.lineTo(S*0.12,-bh*0.55); g.closePath(); g.fill();
+    const grad = g.createLinearGradient(0,-bh,0,bh);
+    grad.addColorStop(0, grey1); grad.addColorStop(0.6, grey0); grad.addColorStop(1, '#e9eef2');
+    g.fillStyle = grad; g.beginPath(); g.ellipse(0,0,bw,bh,0,0,Math.PI*2); g.fill();
+    g.fillStyle = '#eef3f6'; g.beginPath(); g.ellipse(0,bh*0.42,bw*0.6,bh*0.32,0,0,Math.PI*2); g.fill();
+    g.strokeStyle = 'rgba(40,60,75,.5)'; g.lineWidth = Math.max(1,S*0.02);
+    for(let i=0;i<3;i++){ g.beginPath(); g.arc(-bw*0.4+i*S*0.05,-bh*0.1,S*0.12,-0.4,0.6); g.stroke(); }
+    const er = S*0.08;
+    for(const s of [-1,1]){
+      g.fillStyle = '#12222b'; g.beginPath(); g.arc(s*bw*0.5,bh*0.18,er,0,Math.PI*2); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.arc(s*bw*0.5-er*0.3,bh*0.18-er*0.3,er*0.35,0,Math.PI*2); g.fill();
+    }
+    g.fillStyle = '#3a4650'; g.beginPath(); g.arc(0,bh*0.62,bw*0.4,0.1*Math.PI,0.9*Math.PI); g.fill();
+    g.fillStyle = '#fff';
+    for(let i=-2;i<=2;i++){ const mx=i*bw*0.16; g.beginPath(); g.moveTo(mx-bw*0.05,bh*0.55); g.lineTo(mx+bw*0.05,bh*0.55); g.lineTo(mx,bh*0.66); g.closePath(); g.fill(); }
+    g.restore();
   }
 
   // ---- Fishing hook hanging from surface
-  function drawHook(o){
+  function drawHook(g, o){
     const wx = LANE_X[o.lane];
     const top = project(wx, 3.4, o.z);
     const tip = project(wx, 0.95, o.z);
     const S = HOOK_BASE * tip.scale;
     const sway = Math.sin(gameTime*1.6 + o.seed) * 10 * tip.scale;
 
-    // thread (wavy)
-    ctx.strokeStyle = 'rgba(230,245,255,.55)';
-    ctx.lineWidth = Math.max(1, 1.6*tip.scale);
-    ctx.beginPath();
-    ctx.moveTo(top.x + sway*0.4, 0);
-    ctx.quadraticCurveTo(tip.x + sway*1.4, (top.y+tip.y)/2, tip.x + sway, tip.y - S*0.9);
-    ctx.stroke();
+    g.strokeStyle = 'rgba(230,245,255,.55)';
+    g.lineWidth = Math.max(1, 1.6*tip.scale);
+    g.beginPath();
+    g.moveTo(top.x + sway*0.4, 0);
+    g.quadraticCurveTo(tip.x + sway*1.4, (top.y+tip.y)/2, tip.x + sway, tip.y - S*0.9);
+    g.stroke();
 
-    ctx.save();
-    ctx.translate(tip.x + sway, tip.y);
-    // bait / worm
-    ctx.fillStyle = '#ff5c7a';
-    ctx.beginPath(); ctx.ellipse(-S*0.12, -S*0.5, S*0.16, S*0.28, 0.3, 0, Math.PI*2); ctx.fill();
-    // metal hook (J shape)
-    ctx.strokeStyle = '#e9eef2';
-    ctx.lineWidth = Math.max(1.5, S*0.11);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(0, -S*0.9);
-    ctx.lineTo(0, S*0.15);
-    ctx.arc(-S*0.28, S*0.15, S*0.28, 0, Math.PI, false);
-    ctx.stroke();
-    // barb
-    ctx.beginPath();
-    ctx.moveTo(-S*0.56, S*0.15);
-    ctx.lineTo(-S*0.42, S*0.42);
-    ctx.stroke();
-    // glint
-    ctx.strokeStyle = 'rgba(255,255,255,.8)';
-    ctx.lineWidth = Math.max(1, S*0.04);
-    ctx.beginPath(); ctx.moveTo(-S*0.05,-S*0.6); ctx.lineTo(-S*0.05,-S*0.1); ctx.stroke();
-    ctx.restore();
+    g.save();
+    g.translate(tip.x + sway, tip.y);
+    g.fillStyle = '#ff5c7a';
+    g.beginPath(); g.ellipse(-S*0.12, -S*0.5, S*0.16, S*0.28, 0.3, 0, Math.PI*2); g.fill();
+    g.strokeStyle = '#e9eef2'; g.lineWidth = Math.max(1.5, S*0.11); g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0, -S*0.9); g.lineTo(0, S*0.15); g.arc(-S*0.28, S*0.15, S*0.28, 0, Math.PI, false); g.stroke();
+    g.beginPath(); g.moveTo(-S*0.56, S*0.15); g.lineTo(-S*0.42, S*0.42); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.8)'; g.lineWidth = Math.max(1, S*0.04);
+    g.beginPath(); g.moveTo(-S*0.05,-S*0.6); g.lineTo(-S*0.05,-S*0.1); g.stroke();
+    g.restore();
   }
 
   // ---- Sea urchin on the floor
-  function drawUrchin(cx, cy, S, seed){
-    floorShadow(cx, cy + S*0.55, S);
-    ctx.save();
-    ctx.translate(cx, cy);
+  function drawUrchin(g, cx, cy, S, seed){
+    floorShadow(g, cx, cy + S*0.55, S);
+    g.save();
+    g.translate(cx, cy);
     const puff = 1 + Math.sin(gameTime*3 + seed)*0.03;
-    // spines
-    ctx.strokeStyle = '#4a2f8f';
-    ctx.lineWidth = Math.max(1, S*0.06);
-    ctx.lineCap = 'round';
+    g.strokeStyle = '#4a2f8f'; g.lineWidth = Math.max(1, S*0.06); g.lineCap = 'round';
     const spikes = 16;
     for(let i=0;i<spikes;i++){
       const a = (i/spikes)*Math.PI*2 + seed*0.1;
       const r1 = S*0.55*puff, r2 = S*0.92*puff;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a)*r1, Math.sin(a)*r1);
-      ctx.lineTo(Math.cos(a)*r2, Math.sin(a)*r2);
-      ctx.stroke();
+      g.beginPath(); g.moveTo(Math.cos(a)*r1, Math.sin(a)*r1); g.lineTo(Math.cos(a)*r2, Math.sin(a)*r2); g.stroke();
     }
-    // body
-    const g = ctx.createRadialGradient(-S*0.2,-S*0.2,S*0.1, 0,0,S*0.6);
-    g.addColorStop(0,'#9b6bd6'); g.addColorStop(1,'#5b3aa0');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(0,0,S*0.55*puff,0,Math.PI*2); ctx.fill();
-    // little highlights
-    ctx.fillStyle = 'rgba(255,255,255,.5)';
-    for(let i=0;i<5;i++){
-      const a = seed + i*1.3;
-      ctx.beginPath(); ctx.arc(Math.cos(a)*S*0.25, Math.sin(a)*S*0.25, S*0.04, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.restore();
+    const grad = g.createRadialGradient(-S*0.2,-S*0.2,S*0.1, 0,0,S*0.6);
+    grad.addColorStop(0,'#9b6bd6'); grad.addColorStop(1,'#5b3aa0');
+    g.fillStyle = grad; g.beginPath(); g.arc(0,0,S*0.55*puff,0,Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.5)';
+    for(let i=0;i<5;i++){ const a=seed+i*1.3; g.beginPath(); g.arc(Math.cos(a)*S*0.25,Math.sin(a)*S*0.25,S*0.04,0,Math.PI*2); g.fill(); }
+    g.restore();
   }
 
-  // ---- Algae (collectible kelp)
-  function drawAlgae(cx, cy, S, seed){
-    ctx.save();
-    ctx.translate(cx, cy);
-    // glow
-    const glow = ctx.createRadialGradient(0,0,S*0.1, 0,0,S*0.95);
-    glow.addColorStop(0,'rgba(120,255,170,.5)');
-    glow.addColorStop(1,'rgba(120,255,170,0)');
-    ctx.fillStyle = glow;
-    ctx.beginPath(); ctx.arc(0,0,S*0.95,0,Math.PI*2); ctx.fill();
+  // ---- Algae collectible (styled by design)
+  function drawAlgae(g, cx, cy, S, seed, design){
+    g.save();
+    g.translate(cx, cy);
+    const glow = g.createRadialGradient(0,0,S*0.1, 0,0,S*0.95);
+    glow.addColorStop(0, design.glow + '0.5)');
+    glow.addColorStop(1, design.glow + '0)');
+    g.fillStyle = glow; g.beginPath(); g.arc(0,0,S*0.95,0,Math.PI*2); g.fill();
 
-    // kelp blades rising
+    if(design.shape==='round') algaeRound(g,S,seed,design);
+    else if(design.shape==='coral') algaeCoral(g,S,seed,design);
+    else algaeKelp(g,S,seed,design);
+
+    const tw = 0.6 + 0.4*Math.sin(gameTime*6 + seed);
+    g.fillStyle = 'rgba(255,255,255,'+tw.toFixed(2)+')';
+    star(g, 0, -S*0.55, S*0.14, S*0.05);
+    g.restore();
+  }
+  function algaeKelp(g,S,seed,design){
     const blades = 4;
     for(let i=0;i<blades;i++){
       const baseX = (i-(blades-1)/2)*S*0.22;
       const sway = Math.sin(gameTime*2.4 + seed + i)*S*0.18;
-      const g = ctx.createLinearGradient(0, S*0.4, 0, -S*0.9);
-      g.addColorStop(0,'#2e9c4f'); g.addColorStop(1,'#7bef8f');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(baseX - S*0.09, S*0.45);
-      ctx.quadraticCurveTo(baseX + sway*0.6, -S*0.1, baseX + sway, -S*0.85);
-      ctx.quadraticCurveTo(baseX + sway*0.6 + S*0.09, -S*0.1, baseX + S*0.09, S*0.45);
-      ctx.closePath(); ctx.fill();
+      const grad = g.createLinearGradient(0, S*0.4, 0, -S*0.9);
+      grad.addColorStop(0, design.colors[0]); grad.addColorStop(1, design.colors[1]);
+      g.fillStyle = grad;
+      g.beginPath();
+      g.moveTo(baseX - S*0.09, S*0.45);
+      g.quadraticCurveTo(baseX + sway*0.6, -S*0.1, baseX + sway, -S*0.85);
+      g.quadraticCurveTo(baseX + sway*0.6 + S*0.09, -S*0.1, baseX + S*0.09, S*0.45);
+      g.closePath(); g.fill();
     }
-    // sparkle
-    const tw = 0.6 + 0.4*Math.sin(gameTime*6 + seed);
-    ctx.fillStyle = 'rgba(255,255,255,'+tw.toFixed(2)+')';
-    star(0, -S*0.55, S*0.14, S*0.05);
-    ctx.restore();
   }
-  function star(x,y,r1,r2){
-    ctx.beginPath();
+  function algaeRound(g,S,seed,design){
+    const pts = [[0,-S*0.2,0.42],[-S*0.32,-S*0.5,0.3],[S*0.3,-S*0.45,0.32],[-S*0.18,-S*0.75,0.26],[S*0.16,-S*0.78,0.24],[0,S*0.1,0.34]];
+    for(const p of pts){
+      const sway = Math.sin(gameTime*2.2 + seed + p[0])*S*0.05;
+      const grad = g.createRadialGradient(p[0]-S*0.08,p[1]-S*0.08,S*0.03, p[0],p[1],S*p[2]);
+      grad.addColorStop(0, design.colors[1]); grad.addColorStop(1, design.colors[0]);
+      g.fillStyle = grad; g.beginPath(); g.arc(p[0]+sway,p[1],S*p[2],0,Math.PI*2); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.arc(p[0]+sway-S*p[2]*0.3,p[1]-S*p[2]*0.3,S*p[2]*0.22,0,Math.PI*2); g.fill();
+    }
+  }
+  function algaeCoral(g,S,seed,design){
+    g.strokeStyle = design.colors[0]; g.lineWidth = S*0.14; g.lineCap='round';
+    const branches = [[0,0.5,0,-0.9],[0,0.1,-0.5,-0.6],[0,0.1,0.5,-0.6],[-0.28,-0.3,-0.55,-0.85],[0.28,-0.3,0.55,-0.85]];
+    for(const b of branches){
+      const sway = Math.sin(gameTime*2 + seed)*S*0.06;
+      g.beginPath(); g.moveTo(b[0]*S,b[1]*S);
+      g.quadraticCurveTo((b[0]+b[2])/2*S+sway,(b[1]+b[3])/2*S, b[2]*S+sway, b[3]*S); g.stroke();
+    }
+    g.fillStyle = design.colors[1];
+    for(const t of [[0,-0.9],[-0.55,-0.85],[0.55,-0.85],[-0.5,-0.6],[0.5,-0.6]]){
+      const sway = Math.sin(gameTime*2 + seed)*S*0.06;
+      g.beginPath(); g.arc(t[0]*S+sway, t[1]*S, S*0.12, 0, Math.PI*2); g.fill();
+    }
+  }
+  function star(g,x,y,r1,r2){
+    g.beginPath();
     for(let i=0;i<8;i++){
       const a = i*Math.PI/4;
       const r = (i%2===0)? r1 : r2;
       const px = x+Math.cos(a)*r, py = y+Math.sin(a)*r;
-      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      if(i===0) g.moveTo(px,py); else g.lineTo(px,py);
     }
-    ctx.closePath(); ctx.fill();
+    g.closePath(); g.fill();
   }
 
-  // color helper
+  // color helpers
   function shade(hex, amt){
     const c = hex.replace('#','');
     let r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
     r = Math.max(0,Math.min(255,r+amt)); g = Math.max(0,Math.min(255,g+amt)); b = Math.max(0,Math.min(255,b+amt));
     return 'rgb('+r+','+g+','+b+')';
   }
+  function hexA(hex, a){
+    const c = hex.replace('#','');
+    const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+    return 'rgba('+r+','+g+','+b+','+a+')';
+  }
+  function shadeA(hex, amt, a){
+    const c = hex.replace('#','');
+    let r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+    r = Math.max(0,Math.min(255,r+amt)); g = Math.max(0,Math.min(255,g+amt)); b = Math.max(0,Math.min(255,b+amt));
+    return 'rgba('+r+','+g+','+b+','+a+')';
+  }
 
-  function drawObstacle(o){
+  function drawObstacle(g, o){
     if(o.type==='fish'){
       const p = project(LANE_X[o.lane], 1, o.z);
-      drawFish(p.x, p.y, FISH_BASE*p.scale, o.color, o.seed);
+      drawFish(g, p.x, p.y, FISH_BASE*p.scale, o.color, o.seed, active.obstacle.style);
     } else if(o.type==='hook'){
-      drawHook(o);
+      drawHook(g, o);
     } else {
       const p = project(LANE_X[o.lane], 0.5, o.z);
-      drawUrchin(p.x, p.y, URCHIN_BASE*p.scale, o.seed);
+      drawUrchin(g, p.x, p.y, URCHIN_BASE*p.scale, o.seed);
     }
   }
 
@@ -888,23 +1218,27 @@
     scene.sort((p,q)=> q.z - p.z);
 
     for(const item of scene){
-      if(item.kind==='o') drawObstacle(item.ref);
+      if(item.kind==='o') drawObstacle(ctx, item.ref);
       else {
         const a = item.ref;
         const p = project(LANE_X[a.lane], a.band, a.z);
-        drawAlgae(p.x, p.y, ALGAE_BASE*p.scale, a.seed);
+        drawAlgae(ctx, p.x, p.y, ALGAE_BASE*p.scale, a.seed, active.algae);
       }
     }
 
     // turtle
     if(state===S_PLAY || state===S_OVER){
       const p = project(turtle.laneF, turtle.heightF, 0.02);
-      drawTurtle(p.x, p.y, TURTLE_R, turtle.tilt);
+      const fp = project(turtle.laneF, 0, 0.02);
+      floorShadow(ctx, fp.x, fp.y, TURTLE_R);
+      drawTurtle(ctx, p.x, p.y, TURTLE_R, turtle.tilt, active.turtle);
     } else {
       // idle turtle on menu, gentle bob
       const bob = Math.sin(gameTime*1.6)*8;
       const p = project(0, 1, 0.02);
-      drawTurtle(p.x, p.y + bob, TURTLE_R, Math.sin(gameTime*0.8)*0.08);
+      const fp = project(0, 0, 0.02);
+      floorShadow(ctx, fp.x, fp.y, TURTLE_R);
+      drawTurtle(ctx, p.x, p.y + bob, TURTLE_R, Math.sin(gameTime*0.8)*0.08, active.turtle);
     }
 
     drawBubbles();
@@ -938,6 +1272,137 @@
     ctx.fillRect(0,0,W,H);
   }
 
+  // ------------------------------------------------------------------ shop
+  const shopScreen = document.getElementById('shopScreen');
+  const shopGrid = document.getElementById('shopGrid');
+  const shopBalanceEl = document.getElementById('shopBalance');
+  const shopHiEl = document.getElementById('shopHi');
+  const shopTotalEl = document.getElementById('shopTotal');
+  const startBalanceEl = document.getElementById('startBalance');
+  const startHiEl = document.getElementById('startHi');
+  let shopCat = 'turtle';
+
+  function refreshStart(){
+    startBalanceEl.textContent = save.balance;
+    startHiEl.textContent = highscore;
+  }
+  function showStart(){
+    state = S_START;
+    obstacles = []; algae = []; popups = [];
+    overScreen.classList.add('hidden');
+    shopScreen.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+    refreshStart();
+  }
+  function openShop(){
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+    shopScreen.classList.remove('hidden');
+    renderShop();
+  }
+
+  function condText(item, unlocked){
+    if(item.cond.k==='free') return 'Standard';
+    if(item.cond.k==='algae') return unlocked ? 'Gekauft' : ('Preis: '+item.cond.cost+' 🌿');
+    if(item.cond.k==='score') return unlocked ? 'Freigeschaltet' : ('Ab Highscore '+item.cond.score);
+    return '';
+  }
+
+  function renderShop(){
+    shopBalanceEl.textContent = save.balance;
+    shopHiEl.textContent = highscore;
+    shopTotalEl.textContent = save.total;
+    for(const b of document.querySelectorAll('#shopTabs .tab')) b.classList.toggle('active', b.dataset.cat===shopCat);
+
+    shopGrid.innerHTML = '';
+    const dpr = Math.min(2, window.devicePixelRatio||1);
+    for(const item of COSMETICS[shopCat]){
+      const unlocked = isUnlocked(item);
+      const selected = save.selected[shopCat]===item.id;
+
+      const card = document.createElement('div');
+      card.className = 'item' + (selected?' selected':'') + (unlocked?'':' locked');
+
+      const pv = document.createElement('canvas'); pv.className='pv'; card.appendChild(pv);
+      const nm = document.createElement('div'); nm.className='iname'; nm.textContent = item.name; card.appendChild(nm);
+      const cd = document.createElement('div'); cd.className='icond'; cd.textContent = condText(item, unlocked); card.appendChild(cd);
+      const btn = document.createElement('button'); btn.className='ibtn'; card.appendChild(btn);
+      if(!unlocked){ const lk=document.createElement('div'); lk.className='lock'; lk.textContent='🔒'; card.appendChild(lk); }
+
+      if(selected){
+        btn.textContent = '✓ Ausgewählt'; btn.classList.add('active'); btn.disabled = true;
+      } else if(unlocked){
+        btn.textContent = 'Auswählen'; btn.classList.add('owned');
+        btn.onclick = ()=>{ save.selected[shopCat]=item.id; resolveActive(); saveGame(); renderShop(); sfxMove(); };
+      } else if(item.cond.k==='algae'){
+        if(save.balance >= item.cond.cost){
+          btn.textContent = 'Kaufen · '+item.cond.cost+' 🌿'; btn.classList.add('buy');
+          btn.onclick = ()=>{
+            if(save.balance < item.cond.cost) return;
+            save.balance -= item.cond.cost;
+            save.unlocked[item.id] = true;
+            save.selected[shopCat] = item.id;
+            resolveActive(); saveGame(); renderShop(); sfxCollect();
+          };
+        } else {
+          btn.textContent = '🔒 '+item.cond.cost+' 🌿'; btn.classList.add('locked'); btn.disabled = true;
+          cd.textContent = 'Noch '+(item.cond.cost-save.balance)+' 🌿 sammeln';
+        }
+      } else { // score milestone
+        btn.textContent = '🔒 Highscore '+item.cond.score; btn.classList.add('locked'); btn.disabled = true;
+      }
+
+      shopGrid.appendChild(card);
+
+      // preview (drawn after insertion so the canvas has a measured width)
+      const w = pv.clientWidth || 150, h = 74;
+      pv.width = Math.round(w*dpr); pv.height = Math.round(h*dpr);
+      const pg = pv.getContext('2d'); pg.setTransform(dpr,0,0,dpr,0,0);
+      drawPreview(pg, w, h, shopCat, item);
+    }
+  }
+
+  function drawPreview(g, w, h, cat, item){
+    g.clearRect(0,0,w,h);
+    if(cat==='turtle'){
+      drawTurtle(g, w/2, h*0.6, h*0.26, 0, item);
+    } else if(cat==='background'){
+      drawBgPreview(g, w, h, item);
+    } else if(cat==='algae'){
+      drawAlgae(g, w/2, h*0.66, Math.min(w,h)*0.34, 0.7, item);
+    } else {
+      drawFish(g, w/2, h*0.5, Math.min(w,h)*0.36, '#ff7a45', 1.1, item.style);
+    }
+  }
+  function drawBgPreview(g, w, h, bg){
+    const grad = g.createLinearGradient(0,0,0,h);
+    for(const st of bg.sky) grad.addColorStop(st[0], st[1]);
+    g.fillStyle = grad; g.fillRect(0,0,w,h);
+    if(bg.decor==='sunset'){
+      const gr = g.createRadialGradient(w*0.5,h*0.1,2, w*0.5,h*0.1,h*0.8);
+      gr.addColorStop(0,'rgba(255,244,206,.6)'); gr.addColorStop(1,'rgba(255,180,120,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(w*0.5,h*0.1,h*0.8,0,Math.PI*2); g.fill();
+    }
+    g.save(); g.globalCompositeOperation='lighter';
+    for(let i=0;i<3;i++){
+      const x = w*(0.22+i*0.3);
+      const gr = g.createLinearGradient(0,0,0,h);
+      gr.addColorStop(0, bg.ray+(bg.rayA*1.3).toFixed(3)+')'); gr.addColorStop(1, bg.ray+'0)');
+      g.fillStyle = gr; g.beginPath(); g.moveTo(x-5,0); g.lineTo(x+5,0); g.lineTo(x+16,h); g.lineTo(x-16,h); g.closePath(); g.fill();
+    }
+    g.restore();
+    const fg = g.createLinearGradient(0,h*0.6,0,h);
+    fg.addColorStop(0, bg.floor[0]+'0)'); fg.addColorStop(1, bg.floor[1]+'0.9)');
+    g.fillStyle = fg; g.fillRect(0,h*0.55,w,h*0.45);
+  }
+
+  document.getElementById('shopBtn').addEventListener('click', ()=>{ ensureAudio(); openShop(); });
+  document.getElementById('shopBack').addEventListener('click', ()=>{ shopScreen.classList.add('hidden'); showStart(); });
+  document.getElementById('menuBtn').addEventListener('click', ()=>{ showStart(); });
+  for(const b of document.querySelectorAll('#shopTabs .tab')){
+    b.addEventListener('click', ()=>{ shopCat = b.dataset.cat; renderShop(); sfxMove(); });
+  }
+
   // ------------------------------------------------------------------ loop
   let last = performance.now();
   function frame(now){
@@ -953,6 +1418,7 @@
   // ------------------------------------------------------------------ boot
   resize();
   initBubbles();
+  refreshStart();
   requestAnimationFrame(frame);
 })();
 </script>

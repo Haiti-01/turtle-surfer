@@ -25,6 +25,24 @@ serverseitigen Aufwand statisch hosten.
 Die Geschwindigkeit steigt mit der Zeit, der Highscore wird lokal im Browser
 (`localStorage`) gespeichert.
 
+## 🛍️ Kosmetik & Freischaltungen
+
+Über den **Kosmetik-Shop** (vom Startbildschirm erreichbar) lassen sich vier
+Kategorien anpassen — **Schildkröten-Skins**, **Hintergründe**, **Algen-Designs**
+und **Kreaturen** (Fisch-Varianten). Ausgewählte Items werden sofort im Spiel
+angewendet.
+
+Es gibt zwei Freischalt-Bedingungen, gemischt aus schnellen und langfristigen Zielen:
+
+- **🌿 Algen als Währung** — gesammelte Algen landen in deinem Guthaben und lassen
+  sich im Shop gegen günstige bis teure Items eintauschen (z. B. 60 · 150 · 900 🌿).
+- **🏆 Highscore-Meilensteine** — exklusive Items schalten sich ab einem erreichten
+  Highscore frei (z. B. Landschildkröte ab 2500, Kristallpanzer ab 8000).
+
+Jedes Item zeigt klar seinen Zustand (gesperrt / gekauft / ausgewählt) und seine
+Bedingung. Guthaben, Gesamt-Algen, Highscore sowie freigeschaltete und ausgewählte
+Cosmetics werden dauerhaft im `localStorage` gespeichert.
+
 ## ▶️ Lokal spielen
 
 Einfach `index.html` per Doppelklick im Browser öffnen — fertig.
