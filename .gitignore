@@ -1,0 +1,7 @@
+# Lokale Claude-/Vorschau-Hilfsdateien – für das Hosting nicht nötig
+.claude/
+
+# OS / Editor
+Thumbs.db
+.DS_Store
+*.log
