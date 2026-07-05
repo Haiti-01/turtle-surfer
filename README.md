@@ -43,6 +43,44 @@ Jedes Item zeigt klar seinen Zustand (gesperrt / gekauft / ausgewählt) und sein
 Bedingung. Guthaben, Gesamt-Algen, Highscore sowie freigeschaltete und ausgewählte
 Cosmetics werden dauerhaft im `localStorage` gespeichert.
 
+## ⚡ Power-Ups
+
+Erscheinen zufällig als Blasen im Level; die aktive Dauer ist links oben als
+Icon mit Timer-Leiste sichtbar:
+
+| Power-Up | Effekt |
+|----------|--------|
+| 🛡️ Luftblase | Schutzschild — absorbiert genau eine Kollision |
+| 🧲 Magnet | zieht 8 s lang alle Algen automatisch an |
+| ⚡ Laser | zerstört 6 s lang alle entgegenkommenden Hindernisse |
+| 🚀 Turbo | 4 s Geschwindigkeitsschub, doppelte Punkte, unverwundbar |
+| 🐌 Zeitlupe | verlangsamt 6 s lang alle Hindernisse |
+
+## 🔥 Combo-System
+
+Algen ohne Unterbrechung nacheinander einsammeln erhöht den Multiplikator
+(x2, x3 … bis x10) — deutlich sichtbar oben in der Mitte. Ein Treffer
+(auch vom Schild absorbiert) oder eine **verpasste** Alge setzt die Combo zurück.
+
+## 🐟 Bewegliche Hindernisse
+
+Mit steigendem Schwierigkeitsgrad tauchen bewegte Varianten auf: Kreaturen,
+die **die Spur wechseln**, Kreaturen, die **auf- und absteigen**, und Angelhaken,
+die **seitlich pendeln**.
+
+## 🎯 Missionen & 🏆 Trophäen
+
+- **3 aktive Missionen** gleichzeitig (z. B. „Sammle 100 Algen", „Weiche 25 Angelhaken
+  aus", „Erreiche eine 7er-Combo") mit Fortschrittsbalken auf dem Startbildschirm.
+  Abschluss belohnt **Bonus-Algen**; sind alle drei erledigt, erscheint automatisch
+  ein neuer Satz.
+- **11 Trophäen** für Meilensteine (erste 1000 Punkte, 10er-Combo, alle Power-Ups
+  genutzt, …) mit eigenem Übersichts-Menü — erreichte farbig, offene ausgegraut
+  mit Beschreibung.
+
+Alles (Missionen, Fortschritt, Trophäen, Statistiken) wird im `localStorage`
+gespeichert und überlebt Browser-Neustarts.
+
 ## ▶️ Lokal spielen
 
 Einfach `index.html` per Doppelklick im Browser öffnen — fertig.

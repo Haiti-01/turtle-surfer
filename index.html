@@ -151,6 +151,53 @@
   .ibtn.locked{ background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); cursor:not-allowed; }
   .stat{ font-size:12px; opacity:.72; margin-top:12px; }
   .stat b{ color:var(--accent2); }
+
+  /* ---------- active power-up HUD ---------- */
+  #fxBar{ position:absolute; top:132px; left:16px; display:flex; flex-direction:column; gap:6px; z-index:5; pointer-events:none; }
+  .fx{ display:none; align-items:center; gap:7px; background:rgba(4,26,51,.5); border:1px solid rgba(255,255,255,.16); border-radius:12px; padding:4px 8px; color:#fff; }
+  .fx.on{ display:flex; }
+  .fx .ic{ font-size:16px; }
+  .fx .bar{ width:54px; height:6px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; }
+  .fx .bar i{ display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,#7ff0dc,#2bc7ad); }
+  .fx.f-boost .bar i{ background:linear-gradient(90deg,#ffd54a,#ff8f3c); }
+  .fx.f-laser .bar i{ background:linear-gradient(90deg,#ff9db0,#ff4a6b); }
+  .fx.f-slow .bar i{ background:linear-gradient(90deg,#b39dff,#7a5cff); }
+  .fx .chg{ font-size:12px; font-weight:700; color:var(--accent2); }
+
+  /* ---------- combo ---------- */
+  #comboBox{ position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:5; pointer-events:none;
+    font-weight:700; font-size:26px; color:#ffd54a; text-shadow:0 2px 8px rgba(0,0,0,.45); opacity:0; transition:opacity .2s; }
+  #comboBox.show{ opacity:1; }
+  #comboBox.pulse{ animation:comboPulse .3s ease; }
+  @keyframes comboPulse{ 0%{transform:translateX(-50%) scale(1)} 40%{transform:translateX(-50%) scale(1.35)} 100%{transform:translateX(-50%) scale(1)} }
+
+  /* ---------- toasts ---------- */
+  #toasts{ position:absolute; left:50%; bottom:86px; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; align-items:center; z-index:20; pointer-events:none; }
+  .toast{ background:linear-gradient(180deg, rgba(9,50,90,.95), rgba(5,28,54,.95)); border:1px solid rgba(255,255,255,.2); color:#fff;
+    padding:10px 18px; border-radius:14px; font-size:14px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.45);
+    animation:toastIn .3s ease; white-space:nowrap; max-width:92vw; overflow:hidden; text-overflow:ellipsis; }
+  .toast.gold{ border-color:rgba(255,213,74,.6); color:#ffe9a8; }
+  .toast.out{ opacity:0; transform:translateY(8px); transition:.4s; }
+  @keyframes toastIn{ from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
+
+  /* ---------- missions & trophies ---------- */
+  .card{ max-height:92vh; overflow-y:auto; }
+  .missions{ margin-top:16px; text-align:left; }
+  .missions h3{ font-size:14px; letter-spacing:1px; opacity:.8; margin-bottom:8px; text-align:center; }
+  .mission{ background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:8px 12px; margin-bottom:8px; }
+  .mission .mrow{ display:flex; justify-content:space-between; gap:8px; font-size:13px; }
+  .mission .mrew{ color:var(--accent); font-weight:700; white-space:nowrap; }
+  .mission .mbar{ height:7px; border-radius:4px; background:rgba(255,255,255,.12); margin-top:6px; overflow:hidden; }
+  .mission .mbar i{ display:block; height:100%; background:linear-gradient(90deg,#7ff0dc,#2bc7ad); border-radius:4px; }
+  .mission.done{ opacity:.75; border-color:rgba(56,224,200,.5); }
+  .mission.done .mbar i{ background:linear-gradient(90deg,#ffd54a,#ff8f3c); }
+  .trophy{ display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:10px 12px; margin-bottom:8px; text-align:left; }
+  .trophy .ticon{ font-size:26px; filter:grayscale(1) brightness(.6); }
+  .trophy.won .ticon{ filter:none; }
+  .trophy .tname{ font-weight:700; font-size:14px; }
+  .trophy.won .tname{ color:var(--accent); }
+  .trophy .tdesc{ font-size:12px; opacity:.8; }
+  .tlist{ max-height:52vh; overflow-y:auto; margin-top:14px; padding-right:4px; }
 </style>
 </head>
 <body>
@@ -168,6 +215,16 @@
       <div id="muteBtn" title="Ton an/aus">🔊</div>
     </div>
   </div>
+
+  <div id="fxBar">
+    <div class="fx f-shield" id="fxShield"><span class="ic">🛡️</span><span class="chg">1×</span></div>
+    <div class="fx f-magnet" id="fxMagnet"><span class="ic">🧲</span><span class="bar"><i></i></span></div>
+    <div class="fx f-laser" id="fxLaser"><span class="ic">⚡</span><span class="bar"><i></i></span></div>
+    <div class="fx f-boost" id="fxBoost"><span class="ic">🚀</span><span class="bar"><i></i></span></div>
+    <div class="fx f-slow" id="fxSlow"><span class="ic">🐌</span><span class="bar"><i></i></span></div>
+  </div>
+  <div id="comboBox">x2 🔥</div>
+  <div id="toasts"></div>
 
   <!-- Start screen -->
   <div class="overlay" id="startScreen">
@@ -189,10 +246,15 @@
         <div class="item"><span class="dot" style="background:#43d17a"></span>Alge — sammeln (+25)</div>
       </div>
 
+      <div class="missions">
+        <h3>🎯 Missionen</h3>
+        <div id="missionList"></div>
+      </div>
       <div class="walletline">🌿 Algen: <b id="startBalance">0</b> · 🏆 Highscore: <b id="startHi">0</b></div>
       <div class="actions">
         <button class="play" id="startBtn">Los geht's!</button>
         <button class="play secondary" id="shopBtn">🛍️ Kosmetik-Shop</button>
+        <button class="play secondary" id="trophyBtn">🏆 Trophäen</button>
       </div>
       <div class="hint">Tipp: Fische kommen auf mittlerer Höhe — weiche nach oben, unten oder zur Seite aus.</div>
     </div>
@@ -232,6 +294,18 @@
       <button class="play" id="shopBack">Zurück zum Menü</button>
     </div>
   </div>
+
+  <!-- Trophies screen -->
+  <div class="overlay hidden" id="trophyScreen">
+    <div class="card shop">
+      <div class="shop-head">
+        <div class="title small">🏆 Trophäen</div>
+        <div class="wallet"><span id="trophyCount"></span></div>
+      </div>
+      <div class="tlist" id="trophyList"></div>
+      <button class="play" id="trophyBack">Zurück zum Menü</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -245,7 +319,7 @@
   let centerX = 0, horizonY = 0, bottomY = 0, laneSpread = 0, unitHeight = 0, PW = 0;
   const camDepth = 4;      // perspective strength
   const ZFAR = 9;          // spawn depth
-  let FISH_BASE, TURTLE_R, HOOK_BASE, URCHIN_BASE, ALGAE_BASE, BUBBLE_SCALE;
+  let FISH_BASE, TURTLE_R, HOOK_BASE, URCHIN_BASE, ALGAE_BASE, POWER_BASE, BUBBLE_SCALE;
 
   function resize(){
     DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -268,6 +342,7 @@
     HOOK_BASE   = PW * 0.17;
     URCHIN_BASE = PW * 0.17;
     ALGAE_BASE  = PW * 0.19;
+    POWER_BASE  = PW * 0.17;
     BUBBLE_SCALE = PW / 500;
     buildRays();
   }
@@ -310,6 +385,17 @@
 
   const FISH_COLORS = ['#ff7043','#ffca28','#ec407a','#26c6da','#ef5350','#ffa726','#5c6bc0'];
   let runAlgae = 0;   // algae collected in the current run
+
+  // ------------------------------------------------------- power-ups & combo
+  let powerups = [];                       // collectible power-ups in the world
+  let powerAccum = 0, powerGap = 11;
+  const FX_DUR = { magnet:8, laser:6, boost:4, slow:6 };
+  const fx = { shield:0, magnet:0, laser:0, boost:0, slow:0 };   // shield = charges, rest = seconds
+  const POWER_KINDS = ['shield','magnet','laser','boost','slow'];
+  const POWER_ICON = { shield:'🛡️', magnet:'🧲', laser:'⚡', boost:'🚀', slow:'🐌' };
+  const POWER_GLOW = { shield:'rgba(120,220,255,', magnet:'rgba(255,120,120,', laser:'rgba(255,235,120,', boost:'rgba(255,170,80,', slow:'rgba(170,140,255,' };
+  let combo = 0, comboBest = 0;            // consecutive algae without miss/hit
+  let particles = [];
 
   // -------------------------------------------------------- cosmetics catalog
   // cond.k: 'free' | 'algae' (cost, buy with balance) | 'score' (score milestone)
@@ -358,7 +444,9 @@
 
   // -------------------------------------------------------------- persistence
   const SAVE_KEY = 'turtleSurferSave';
-  let save = { hi:0, balance:0, total:0, unlocked:{}, selected:Object.assign({},DEFAULT_SELECTED) };
+  const DEFAULT_STATS = { runs:0, laser:0, shields:0, powerCount:0, powerTypes:{}, maxCombo:0, bought:0, missionsDone:0, hooksDodged:0 };
+  let save = { hi:0, balance:0, total:0, unlocked:{}, selected:Object.assign({},DEFAULT_SELECTED),
+               stats:Object.assign({},DEFAULT_STATS), ach:{}, missions:[] };
   function loadGame(){
     try{
       const raw = localStorage.getItem(SAVE_KEY);
@@ -367,6 +455,10 @@
         save.hi = p.hi|0; save.balance = p.balance|0; save.total = p.total|0;
         save.unlocked = p.unlocked || {};
         save.selected = Object.assign({}, DEFAULT_SELECTED, p.selected || {});
+        save.stats = Object.assign({}, DEFAULT_STATS, p.stats || {});
+        save.stats.powerTypes = (p.stats && p.stats.powerTypes) || {};
+        save.ach = p.ach || {};
+        save.missions = Array.isArray(p.missions) ? p.missions : [];
       } else {
         save.hi = parseInt(localStorage.getItem('turtleSurferHi') || '0', 10) || 0; // migrate
       }
@@ -391,8 +483,83 @@
     }
   }
 
+  // ------------------------------------------------------------- missions
+  const MISSION_TPL = {
+    algae: { name:(n)=>'Sammle '+n+' Algen', sizes:[[30,60],[60,110],[100,170]] },
+    hooks: { name:(n)=>'Weiche '+n+' Angelhaken aus', sizes:[[8,60],[16,110],[25,170]] },
+    combo: { name:(n)=>'Erreiche eine '+n+'er-Combo', sizes:[[4,80],[7,140],[10,220]] },
+    power: { name:(n)=>'Nutze '+n+' Power-Ups', sizes:[[3,70],[6,120],[10,190]] },
+    score: { name:(n)=>'Erreiche '+n+' Punkte in einer Runde', sizes:[[1200,80],[2500,140],[4500,220]] },
+    runs:  { name:(n)=>'Spiele '+n+' Runden', sizes:[[3,60],[5,100],[8,150]] },
+    laser: { name:(n)=>'Zerstöre '+n+' Hindernisse mit dem Laser', sizes:[[4,90],[8,150],[15,230]] },
+  };
+  function newMission(excl){
+    const keys = Object.keys(MISSION_TPL).filter(k=>!excl.includes(k));
+    const tpl = keys[(Math.random()*keys.length)|0];
+    const size = MISSION_TPL[tpl].sizes[(Math.random()*3)|0];
+    return { tpl, n:size[0], reward:size[1], p:0, done:false };
+  }
+  function newMissionSet(){
+    const set = [], used = [];
+    for(let i=0;i<3;i++){ const m = newMission(used); used.push(m.tpl); set.push(m); }
+    return set;
+  }
+  function ensureMissions(){
+    if(!save.missions || save.missions.length!==3 || save.missions.some(m=>!m || !MISSION_TPL[m.tpl])){
+      save.missions = newMissionSet();
+      saveGame();
+    }
+  }
+  function missionEvent(tpl, val){
+    let finished = false;
+    for(const m of save.missions){
+      if(m.done || m.tpl!==tpl) continue;
+      if(tpl==='combo' || tpl==='score') m.p = Math.max(m.p, val);
+      else m.p += val;
+      if(m.p >= m.n){
+        m.p = m.n; m.done = true; finished = true;
+        save.balance += m.reward;
+        save.stats.missionsDone++;
+        toast('🎯 Mission erfüllt: +'+m.reward+' 🌿', 'gold');
+        sfxMission();
+      }
+    }
+    if(save.missions.length && save.missions.every(m=>m.done)){
+      save.missions = newMissionSet();
+      toast('✨ Neue Missionen verfügbar!', 'gold');
+    }
+    if(finished){ saveGame(); checkAchievements(); }
+  }
+
+  // ----------------------------------------------------------- achievements
+  const ACHIEVEMENTS = [
+    { id:'first1000', icon:'🏁', name:'Flossenstart',      desc:'Erreiche 1000 Punkte in einer Runde',        test:s=>s.hi>=1000 },
+    { id:'score5000', icon:'🌊', name:'Meeresprofi',       desc:'Erreiche 5000 Punkte in einer Runde',        test:s=>s.hi>=5000 },
+    { id:'algae100',  icon:'🌿', name:'Algen-Gourmet',     desc:'Sammle insgesamt 100 Algen',                 test:s=>s.total>=100 },
+    { id:'algae500',  icon:'🥬', name:'Algen-Baron',       desc:'Sammle insgesamt 500 Algen',                 test:s=>s.total>=500 },
+    { id:'combo10',   icon:'🔥', name:'Combo-König',       desc:'Erreiche eine 10er-Combo',                   test:s=>s.stats.maxCombo>=10 },
+    { id:'allpower',  icon:'✨', name:'Alles ausprobiert', desc:'Nutze alle 5 Power-Ups mindestens einmal',   test:s=>Object.keys(s.stats.powerTypes).length>=5 },
+    { id:'runs5',     icon:'🎮', name:'Dranbleiben',       desc:'Spiele 5 Runden',                            test:s=>s.stats.runs>=5 },
+    { id:'laser10',   icon:'⚡', name:'Zap!',              desc:'Zerstöre 10 Hindernisse mit dem Laser',      test:s=>s.stats.laser>=10 },
+    { id:'shield1',   icon:'🛡️', name:'Knapp vorbei',      desc:'Überlebe einen Treffer dank Luftblase',      test:s=>s.stats.shields>=1 },
+    { id:'shopper',   icon:'🛍️', name:'Shopping-Tour',     desc:'Kaufe dein erstes Cosmetic',                 test:s=>s.stats.bought>=1 },
+    { id:'mission5',  icon:'🎯', name:'Auftragsschwimmer', desc:'Schließe 5 Missionen ab',                    test:s=>s.stats.missionsDone>=5 },
+  ];
+  function checkAchievements(){
+    let won = false;
+    for(const a of ACHIEVEMENTS){
+      if(!save.ach[a.id] && a.test(save)){
+        save.ach[a.id] = true; won = true;
+        toast('🏆 Trophäe: '+a.name+'!', 'gold');
+        sfxTrophy();
+      }
+    }
+    if(won) saveGame();
+  }
+
   loadGame();
   resolveActive();
+  ensureMissions();
 
   // ------------------------------------------------------------------ audio
   let audioCtx = null, muted = false;
@@ -423,6 +590,23 @@
       g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
       o.connect(g); g.connect(audioCtx.destination);
       o.start(); o.stop(audioCtx.currentTime + 0.5);
+    }catch(e){}
+  }
+  function sfxPowerup(){ blip(520,0.09,'triangle',0.12); setTimeout(()=>blip(780,0.09,'triangle',0.12),70); setTimeout(()=>blip(1040,0.12,'triangle',0.12),140); }
+  function sfxComboUp(n){ blip(500 + Math.min(n,10)*70, 0.08, 'triangle', 0.09); }
+  function sfxTrophy(){ blip(660,0.12,'triangle',0.14); setTimeout(()=>blip(880,0.12,'triangle',0.14),110); setTimeout(()=>blip(1180,0.2,'triangle',0.14),220); }
+  function sfxMission(){ blip(740,0.1,'sine',0.12); setTimeout(()=>blip(1110,0.16,'sine',0.12),90); }
+  function sfxShieldPop(){ blip(300,0.15,'sawtooth',0.14); setTimeout(()=>blip(150,0.2,'sawtooth',0.1),60); }
+  function sfxLaser(){
+    if(muted || !audioCtx) return;
+    try{
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type='square'; o.frequency.setValueAtTime(900, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.12);
+      g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.13);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.14);
     }catch(e){}
   }
 
@@ -462,18 +646,34 @@
   function rand(a,b){ return a + Math.random()*(b-a); }
   function pick(arr){ return arr[(Math.random()*arr.length)|0]; }
 
-  function makeObstacle(lane, type){
+  function makeObstacle(lane, type, diff){
     let bands;
     if(type==='fish')   bands = [1];        // mid
     else if(type==='hook') bands = [2,1];   // top + mid  -> dive under
     else                bands = [1,0];      // urchin: mid + bottom -> surface over
-    return {
+    const o = {
       lane, type, bands,
+      curLane: lane, laneIdxF: lane,
+      bandF: type==='fish' ? 1 : null,
       z: ZFAR, prevZ: ZFAR,
       color: type==='fish' ? pick(FISH_COLORS) : null,
       seed: Math.random()*Math.PI*2,
-      passed: false
+      passed: false, dead: 0,
+      move: null
     };
+    // movement patterns appear more often as difficulty rises
+    const d = diff || 0, roll = Math.random();
+    if(type==='fish'){
+      if(roll < d*0.35){
+        const to = lane===0 ? 1 : (lane===2 ? 1 : (Math.random()<0.5 ? 0 : 2));
+        o.move = { kind:'lane', from:lane, to, z1:6.0, z0:2.2 };   // creature changes lane
+      } else if(roll < d*0.6){
+        o.move = { kind:'vert', sp: rand(1.6,2.4) };               // creature bobs up & down
+      }
+    } else if(type==='hook' && roll < d*0.45){
+      o.move = { kind:'pend', sp: rand(1.2,1.8) };                 // hook swings sideways
+    }
+    return o;
   }
 
   function spawnObstacleRow(){
@@ -490,7 +690,7 @@
     for(const l of lanes){
       const r = Math.random();
       const type = r < 0.52 ? 'fish' : (r < 0.76 ? 'hook' : 'urchin');
-      obstacles.push(makeObstacle(l, type));
+      obstacles.push(makeObstacle(l, type, diff));
     }
     obstacleGap = lerp(3.5, 2.05, diff) * rand(0.85, 1.2);
   }
@@ -501,8 +701,16 @@
     const last = obstacles.length ? obstacles[obstacles.length-1] : null;
     if(last && last.z > ZFAR-1.2 && lane===last.lane) lane = (lane+1)%3;
     const band = pick([1,1,0,2]);
-    algae.push({ lane, band, z: ZFAR, prevZ: ZFAR, seed: Math.random()*Math.PI*2, taken:false });
+    algae.push({ lane, band, wx: LANE_X[lane], bf: band, z: ZFAR, prevZ: ZFAR, seed: Math.random()*Math.PI*2, taken:false, mag:false });
     algaeGap = rand(2.4, 4.4);
+  }
+
+  function spawnPowerup(){
+    const lane = (Math.random()*3)|0;
+    const band = pick([1,1,0,2]);
+    const kind = POWER_KINDS[(Math.random()*POWER_KINDS.length)|0];
+    powerups.push({ lane, band, kind, z: ZFAR, prevZ: ZFAR, seed: Math.random()*Math.PI*2, taken:false });
+    powerGap = rand(9, 16);
   }
 
   // ------------------------------------------------------------------ input
@@ -524,7 +732,7 @@
       else if(k==='arrowup'||k==='w') move('up');
       else if(k==='arrowdown'||k==='s') move('down');
     } else {
-      if((k===' '||k==='enter') && shopScreen.classList.contains('hidden')) startGame();
+      if((k===' '||k==='enter') && shopScreen.classList.contains('hidden') && trophyScreen.classList.contains('hidden')) startGame();
     }
   }, {passive:false});
 
@@ -550,13 +758,74 @@
   const algVal = document.getElementById('algVal');
   hiVal.textContent = highscore;
 
+  // ---- toasts
+  const toastsEl = document.getElementById('toasts');
+  function toast(text, cls){
+    const d = document.createElement('div');
+    d.className = 'toast' + (cls ? ' '+cls : '');
+    d.textContent = text;
+    toastsEl.appendChild(d);
+    while(toastsEl.children.length > 3) toastsEl.removeChild(toastsEl.firstChild);
+    setTimeout(()=>{ d.classList.add('out'); setTimeout(()=>d.remove(), 450); }, 2800);
+  }
+
+  // ---- combo UI
+  const comboBox = document.getElementById('comboBox');
+  function comboMult(){ return Math.max(1, Math.min(combo, 10)); }
+  function updateComboUI(pulse){
+    if(combo >= 2){
+      comboBox.textContent = 'x'+comboMult()+' 🔥';
+      comboBox.classList.add('show');
+      if(pulse){ comboBox.classList.remove('pulse'); void comboBox.offsetWidth; comboBox.classList.add('pulse'); }
+    } else {
+      comboBox.classList.remove('show');
+    }
+  }
+  function resetCombo(){ if(combo>0){ combo = 0; updateComboUI(false); } }
+
+  // ---- active power-up HUD
+  const fxEls = {
+    shield:{ el:document.getElementById('fxShield') },
+    magnet:{ el:document.getElementById('fxMagnet') },
+    laser: { el:document.getElementById('fxLaser') },
+    boost: { el:document.getElementById('fxBoost') },
+    slow:  { el:document.getElementById('fxSlow') },
+  };
+  for(const k of ['magnet','laser','boost','slow']) fxEls[k].bar = fxEls[k].el.querySelector('.bar i');
+  function updateFxHUD(){
+    fxEls.shield.el.classList.toggle('on', fx.shield > 0);
+    for(const k of ['magnet','laser','boost','slow']){
+      const on = fx[k] > 0;
+      fxEls[k].el.classList.toggle('on', on);
+      if(on) fxEls[k].bar.style.width = (fx[k]/FX_DUR[k]*100).toFixed(1)+'%';
+    }
+  }
+
+  function activatePower(kind){
+    if(kind==='shield') fx.shield = 1;
+    else fx[kind] = FX_DUR[kind];
+    save.stats.powerCount++;
+    save.stats.powerTypes[kind] = true;
+    missionEvent('power', 1);
+    sfxPowerup();
+    toast({ shield:'🛡️ Schutzblase!', magnet:'🧲 Algen-Magnet!', laser:'⚡ Laser aktiv!', boost:'🚀 Turbo!', slow:'🐌 Zeitlupe!' }[kind]);
+    const p = project(turtle.laneF, turtle.heightF, 0.02);
+    popups.push({ x:p.x, y:p.y - TURTLE_R*1.5, life:1, text:POWER_ICON[kind] });
+    checkAchievements();
+  }
+
   function resetGame(){
     obstacles = []; algae = []; popups = [];
+    powerups = []; particles = [];
     turtle.lane = 1; turtle.band = 1;
     turtle.laneF = 0; turtle.heightF = 1; turtle.tilt = 0; turtle.laneVel = 0;
     score = 0; speed = 2.2; elapsed = 0; runAlgae = 0;
     obstacleAccum = 0; obstacleGap = 3.0;
     algaeAccum = 0; algaeGap = 2.6;
+    powerAccum = 0; powerGap = 11;
+    fx.shield = 0; fx.magnet = 0; fx.laser = 0; fx.boost = 0; fx.slow = 0;
+    combo = 0; comboBest = 0;
+    updateComboUI(false);
     hitFlash = 0; shake = 0;
     scoreVal.textContent = '0'; algVal.textContent = '0';
   }
@@ -567,11 +836,14 @@
     startScreen.classList.add('hidden');
     overScreen.classList.add('hidden');
     shopScreen.classList.add('hidden');
+    trophyScreen.classList.add('hidden');
   }
   function gameOver(){
     state = S_OVER;
     hitFlash = 1; shake = 16;
     sfxHit();
+    fx.shield = 0; fx.magnet = 0; fx.laser = 0; fx.boost = 0; fx.slow = 0;
+    resetCombo();
     const finalScore = Math.floor(score);
     const isBest = finalScore > highscore;
     if(isBest) highscore = finalScore;
@@ -579,6 +851,11 @@
     save.balance += runAlgae;
     save.total   += runAlgae;
     save.hi = highscore;
+    save.stats.runs++;
+    save.stats.maxCombo = Math.max(save.stats.maxCombo, comboBest);
+    missionEvent('runs', 1);
+    missionEvent('score', finalScore);
+    checkAchievements();
     saveGame();
     resolveActive();  // a new highscore may unlock milestone cosmetics
     document.getElementById('finalScore').textContent = finalScore;
@@ -595,50 +872,125 @@
   function update(dt){
     elapsed += dt;
     speed = lerp(2.2, 5.6, Math.min(elapsed/75, 1));
-    score += speed * dt * 6;              // distance points
+    const eff = speed * (fx.boost>0 ? 1.75 : (fx.slow>0 ? 0.45 : 1));
+    score += eff * dt * 6 * (fx.boost>0 ? 2 : 1);   // distance points (double during boost)
     scoreVal.textContent = Math.floor(score);
 
-    // spawn
-    obstacleAccum += speed * dt;
-    if(obstacleAccum >= obstacleGap){ obstacleAccum -= obstacleGap; spawnObstacleRow(); }
-    algaeAccum += speed * dt;
-    if(algaeAccum >= algaeGap){ algaeAccum -= algaeGap; spawnAlgae(); }
+    // power-up timers
+    for(const k of ['magnet','laser','boost','slow']) if(fx[k]>0) fx[k] = Math.max(0, fx[k]-dt);
 
-    // move obstacles + collision at z crossing 0
+    // spawn
+    obstacleAccum += eff * dt;
+    if(obstacleAccum >= obstacleGap){ obstacleAccum -= obstacleGap; spawnObstacleRow(); }
+    algaeAccum += eff * dt;
+    if(algaeAccum >= algaeGap){ algaeAccum -= algaeGap; spawnAlgae(); }
+    powerAccum += eff * dt;
+    if(powerAccum >= powerGap){ powerAccum -= powerGap; spawnPowerup(); }
+
+    // obstacles: approach + movement patterns + collision at z crossing 0
     for(const o of obstacles){
       o.prevZ = o.z;
-      o.z -= speed * dt;
+      o.z -= eff * dt;
+
+      if(o.move){
+        if(o.move.kind==='lane'){
+          const t = Math.max(0, Math.min(1, (o.move.z1 - o.z)/(o.move.z1 - o.move.z0)));
+          const s = t*t*(3-2*t);
+          o.laneIdxF = o.move.from + (o.move.to - o.move.from)*s;
+          o.curLane = Math.round(o.laneIdxF);
+        } else if(o.move.kind==='vert'){
+          o.bandF = Math.max(0, Math.min(2, 1 + Math.sin(gameTime*o.move.sp + o.seed)));
+          o.bands = [Math.round(o.bandF)];
+        } else if(o.move.kind==='pend'){
+          o.laneIdxF = Math.max(0, Math.min(2, o.lane + Math.sin(gameTime*o.move.sp + o.seed)*0.85));
+          o.curLane = Math.round(o.laneIdxF);
+        }
+      }
+
+      // laser clears everything approaching the player
+      if(fx.laser>0 && !o.passed && !o.dead && o.z <= 2.4 && o.z > 0.1){
+        o.dead = 1;
+        explodeAt(o);
+        score += 15;
+        save.stats.laser++;
+        missionEvent('laser', 1);
+        sfxLaser();
+        continue;
+      }
+
       if(!o.passed && o.prevZ > 0 && o.z <= 0){
         o.passed = true;
-        if(o.lane === turtle.lane && o.bands.includes(turtle.band)){
+        const hit = (o.curLane === turtle.lane && o.bands.includes(turtle.band));
+        if(hit && fx.boost > 0){
+          explodeAt(o); score += 25;          // invulnerable during boost: smash through
+        } else if(hit && fx.shield > 0){
+          fx.shield = 0;
+          save.stats.shields++;
+          resetCombo();
+          shieldPop();
+          checkAchievements();
+        } else if(hit){
           gameOver();
+        } else if(o.type === 'hook'){
+          save.stats.hooksDodged++;
+          missionEvent('hooks', 1);
         }
       }
     }
-    obstacles = obstacles.filter(o => o.z > -0.6);
+    obstacles = obstacles.filter(o => o.z > -0.6 && !o.dead);
 
-    // algae
+    // algae: magnet pull, combo scoring, miss detection
     for(const a of algae){
       a.prevZ = a.z;
-      a.z -= speed * dt;
+      a.z -= eff * dt;
+      if(fx.magnet>0 && !a.taken && a.z < 3.2 && a.z > -0.2){
+        a.wx += (turtle.laneF - a.wx) * Math.min(1, dt*8);
+        a.bf += (turtle.heightF - a.bf) * Math.min(1, dt*8);
+        a.mag = true;
+      }
       if(!a.taken && a.prevZ > 0 && a.z <= 0){
         a.taken = true;
-        if(a.lane === turtle.lane && a.band === turtle.band){
-          score += 25;
+        if(a.mag || (a.lane === turtle.lane && a.band === turtle.band)){
+          combo++;
+          comboBest = Math.max(comboBest, combo);
+          save.stats.maxCombo = Math.max(save.stats.maxCombo, combo);
+          const m = comboMult();
+          const pts = 25 * m;
+          score += pts;
           runAlgae += 1;
           algVal.textContent = runAlgae;
-          const p = project(LANE_X[turtle.lane], turtle.band, 0.02);
-          popups.push({ x:p.x, y:p.y - TURTLE_R, life:1, text:'+25' });
+          const p = project(turtle.laneF, turtle.heightF, 0.02);
+          popups.push({ x:p.x, y:p.y - TURTLE_R, life:1, text:'+'+pts+(m>1 ? '  x'+m : '') });
           sfxCollect();
+          if(combo>=2) sfxComboUp(combo);
+          updateComboUI(true);
+          missionEvent('algae', 1);
+          missionEvent('combo', combo);
+          checkAchievements();
+        } else {
+          resetCombo();   // missed algae breaks the combo
         }
       }
     }
     algae = algae.filter(a => a.z > -0.6);
+
+    // power-up collectibles
+    for(const u of powerups){
+      u.prevZ = u.z;
+      u.z -= eff * dt;
+      if(!u.taken && u.prevZ > 0 && u.z <= 0){
+        u.taken = true;
+        if(u.lane === turtle.lane && u.band === turtle.band){
+          activatePower(u.kind);
+        }
+      }
+    }
+    powerups = powerups.filter(u => u.z > -0.6);
   }
 
   function updateCommon(dt){
     gameTime += dt;
-    const eff = (state===S_PLAY) ? speed : 1.1;
+    const eff = (state===S_PLAY) ? speed * (fx.boost>0 ? 1.75 : (fx.slow>0 ? 0.45 : 1)) : 1.1;
     stripeScroll += eff * dt;
 
     // turtle eased motion
@@ -659,6 +1011,12 @@
     // popups
     for(const p of popups){ p.life -= dt*1.3; p.y -= dt*60; }
     popups = popups.filter(p=>p.life>0);
+
+    // particles
+    for(const pt of particles){ pt.life -= dt; pt.x += pt.vx*dt; pt.y += pt.vy*dt; pt.vy += 50*dt; }
+    particles = particles.filter(p=>p.life>0);
+
+    updateFxHUD();
 
     if(hitFlash>0) hitFlash = Math.max(0, hitFlash - dt*2);
     if(shake>0) shake = Math.max(0, shake - dt*40);
@@ -1059,7 +1417,7 @@
 
   // ---- Fishing hook hanging from surface
   function drawHook(g, o){
-    const wx = LANE_X[o.lane];
+    const wx = (o.laneIdxF != null ? o.laneIdxF : o.lane) - 1;
     const top = project(wx, 3.4, o.z);
     const tip = project(wx, 0.95, o.z);
     const S = HOOK_BASE * tip.scale;
@@ -1103,6 +1461,107 @@
     g.fillStyle = 'rgba(255,255,255,.5)';
     for(let i=0;i<5;i++){ const a=seed+i*1.3; g.beginPath(); g.arc(Math.cos(a)*S*0.25,Math.sin(a)*S*0.25,S*0.04,0,Math.PI*2); g.fill(); }
     g.restore();
+  }
+
+  // ---- Power-up bubble with icon
+  function drawPowerup(g, u){
+    const p = project(LANE_X[u.lane], u.band, u.z);
+    const S = POWER_BASE * p.scale;
+    const bob = Math.sin(gameTime*3 + u.seed) * S*0.1;
+    g.save();
+    g.translate(p.x, p.y + bob);
+    const glow = g.createRadialGradient(0,0,S*0.2, 0,0,S*1.1);
+    glow.addColorStop(0, POWER_GLOW[u.kind]+'0.55)');
+    glow.addColorStop(1, POWER_GLOW[u.kind]+'0)');
+    g.fillStyle = glow; g.beginPath(); g.arc(0,0,S*1.1,0,Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(210,240,255,.16)';
+    g.beginPath(); g.arc(0,0,S*0.62,0,Math.PI*2); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = Math.max(1, S*0.05);
+    g.beginPath(); g.arc(0,0,S*0.62,0,Math.PI*2); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.5)';
+    g.beginPath(); g.arc(-S*0.22,-S*0.22,S*0.12,0,Math.PI*2); g.fill();
+    g.font = Math.round(S*0.6)+'px sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(POWER_ICON[u.kind], 0, S*0.02);
+    g.restore();
+  }
+
+  // ---- effect visuals around the turtle
+  function drawShieldBubble(x,y){
+    const R = TURTLE_R*1.55 + Math.sin(gameTime*4)*3;
+    ctx.save();
+    const g = ctx.createRadialGradient(x,y,R*0.6, x,y,R);
+    g.addColorStop(0,'rgba(140,220,255,0)');
+    g.addColorStop(0.85,'rgba(140,220,255,.14)');
+    g.addColorStop(1,'rgba(190,240,255,.42)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,R,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(200,240,255,.5)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x,y,R,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath(); ctx.ellipse(x-R*0.4,y-R*0.45,R*0.18,R*0.09,-0.6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  function drawMagnetField(x,y){
+    ctx.save();
+    for(let i=0;i<3;i++){
+      const rr = TURTLE_R*(1.3 + i*0.5) + ((gameTime*40) % (TURTLE_R*0.5));
+      ctx.strokeStyle = 'rgba(255,140,140,'+(0.28 - i*0.08).toFixed(2)+')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x,y,rr,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawLaserBeams(x,y){
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for(const s of [-1,1]){
+      const g = ctx.createLinearGradient(x, y, centerX, horizonY);
+      g.addColorStop(0,'rgba(255,80,110,.55)');
+      g.addColorStop(1,'rgba(255,80,110,0)');
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 5 + Math.sin(gameTime*20)*2;
+      ctx.beginPath();
+      ctx.moveTo(x + s*TURTLE_R*0.8, y - TURTLE_R*0.2);
+      ctx.lineTo(centerX + s*8, horizonY + 30);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawBoostFX(){
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = 'rgba(255,220,140,.35)';
+    ctx.lineWidth = 2;
+    for(let i=0;i<10;i++){
+      const a = (i/10)*Math.PI*2 + (gameTime % 1);
+      const r1 = H*0.25 + ((gameTime*900 + i*173) % (H*0.55));
+      const x = centerX + Math.cos(a)*r1*1.1, y = H*0.45 + Math.sin(a)*r1*0.7;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.lineTo(centerX + (x-centerX)*1.12, H*0.45 + (y-H*0.45)*1.12);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ---- burst effects
+  function explodeAt(o){
+    const p = project((o.laneIdxF != null ? o.laneIdxF : o.lane) - 1, (o.bandF != null ? o.bandF : 1), Math.max(o.z, 0.05));
+    for(let i=0;i<14;i++){
+      const a = Math.random()*Math.PI*2, sp = rand(40,180)*Math.max(p.scale,0.4);
+      particles.push({ x:p.x, y:p.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 40*p.scale, life:rand(0.4,0.8), r:rand(2,5)*p.scale*2, c: o.type==='hook' ? '230,240,255' : '255,200,90' });
+    }
+    popups.push({ x:p.x, y:p.y, life:1, text:'+15' });
+  }
+  function shieldPop(){
+    sfxShieldPop();
+    shake = 8;
+    const p = project(turtle.laneF, turtle.heightF, 0.02);
+    for(let i=0;i<16;i++){
+      const a = Math.random()*Math.PI*2, sp = rand(60,200);
+      particles.push({ x:p.x + Math.cos(a)*TURTLE_R, y:p.y + Math.sin(a)*TURTLE_R, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:rand(0.3,0.6), r:rand(2,6), c:'140,220,255' });
+    }
+    toast('🛡️ Schild hat dich gerettet!');
   }
 
   // ---- Algae collectible (styled by design)
@@ -1193,13 +1652,14 @@
   }
 
   function drawObstacle(g, o){
+    const wx = (o.laneIdxF != null ? o.laneIdxF : o.lane) - 1;
     if(o.type==='fish'){
-      const p = project(LANE_X[o.lane], 1, o.z);
+      const p = project(wx, (o.bandF != null ? o.bandF : 1), o.z);
       drawFish(g, p.x, p.y, FISH_BASE*p.scale, o.color, o.seed, active.obstacle.style);
     } else if(o.type==='hook'){
       drawHook(g, o);
     } else {
-      const p = project(LANE_X[o.lane], 0.5, o.z);
+      const p = project(wx, 0.5, o.z);
       drawUrchin(g, p.x, p.y, URCHIN_BASE*p.scale, o.seed);
     }
   }
@@ -1215,13 +1675,15 @@
     const scene = [];
     for(const o of obstacles) scene.push({z:o.z, kind:'o', ref:o});
     for(const a of algae) if(!a.taken || a.z>0) scene.push({z:a.z, kind:'a', ref:a});
+    for(const u of powerups) if(!u.taken || u.z>0) scene.push({z:u.z, kind:'p', ref:u});
     scene.sort((p,q)=> q.z - p.z);
 
     for(const item of scene){
       if(item.kind==='o') drawObstacle(ctx, item.ref);
+      else if(item.kind==='p') drawPowerup(ctx, item.ref);
       else {
         const a = item.ref;
-        const p = project(LANE_X[a.lane], a.band, a.z);
+        const p = project(a.wx, a.bf, a.z);
         drawAlgae(ctx, p.x, p.y, ALGAE_BASE*p.scale, a.seed, active.algae);
       }
     }
@@ -1231,7 +1693,10 @@
       const p = project(turtle.laneF, turtle.heightF, 0.02);
       const fp = project(turtle.laneF, 0, 0.02);
       floorShadow(ctx, fp.x, fp.y, TURTLE_R);
+      if(fx.laser>0) drawLaserBeams(p.x, p.y);
       drawTurtle(ctx, p.x, p.y, TURTLE_R, turtle.tilt, active.turtle);
+      if(fx.shield>0) drawShieldBubble(p.x, p.y);
+      if(fx.magnet>0) drawMagnetField(p.x, p.y);
     } else {
       // idle turtle on menu, gentle bob
       const bob = Math.sin(gameTime*1.6)*8;
@@ -1242,6 +1707,14 @@
     }
 
     drawBubbles();
+
+    // particles
+    for(const pt of particles){
+      ctx.globalAlpha = Math.max(0, Math.min(1, pt.life*2.2));
+      ctx.fillStyle = 'rgba('+pt.c+',1)';
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
 
     // score popups
     for(const pop of popups){
@@ -1257,6 +1730,13 @@
     }
 
     ctx.restore();
+
+    // power-up screen effects (screen-space, outside shake)
+    if(fx.boost>0) drawBoostFX();
+    if(fx.slow>0){
+      ctx.fillStyle = 'rgba(100,80,220,.09)';
+      ctx.fillRect(0,0,W,H);
+    }
 
     // hit flash (screen-space, outside shake)
     if(hitFlash>0){
@@ -1285,15 +1765,53 @@
   function refreshStart(){
     startBalanceEl.textContent = save.balance;
     startHiEl.textContent = highscore;
+    renderMissions();
   }
   function showStart(){
     state = S_START;
-    obstacles = []; algae = []; popups = [];
+    obstacles = []; algae = []; popups = []; powerups = []; particles = [];
     overScreen.classList.add('hidden');
     shopScreen.classList.add('hidden');
+    trophyScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
     refreshStart();
   }
+
+  // ---------------------------------------------------------- missions UI
+  function renderMissions(){
+    const list = document.getElementById('missionList');
+    list.innerHTML = '';
+    for(const m of save.missions){
+      const tpl = MISSION_TPL[m.tpl];
+      if(!tpl) continue;
+      const d = document.createElement('div');
+      d.className = 'mission' + (m.done ? ' done' : '');
+      const pct = Math.min(100, m.p/m.n*100);
+      d.innerHTML = '<div class="mrow"><span>'+(m.done?'✅ ':'')+tpl.name(m.n)+'</span><span class="mrew">+'+m.reward+' 🌿</span></div>'
+        + '<div class="mbar"><i style="width:'+pct.toFixed(0)+'%"></i></div>'
+        + '<div class="mrow" style="margin-top:3px; opacity:.7; font-size:11px"><span>'+Math.min(m.p,m.n)+' / '+m.n+'</span><span>'+(m.done?'Erledigt!':'')+'</span></div>';
+      list.appendChild(d);
+    }
+  }
+
+  // ---------------------------------------------------------- trophies UI
+  const trophyScreen = document.getElementById('trophyScreen');
+  function renderTrophies(){
+    const list = document.getElementById('trophyList');
+    list.innerHTML = '';
+    let won = 0;
+    for(const a of ACHIEVEMENTS){
+      const has = !!save.ach[a.id];
+      if(has) won++;
+      const d = document.createElement('div');
+      d.className = 'trophy' + (has ? ' won' : '');
+      d.innerHTML = '<div class="ticon">'+a.icon+'</div><div><div class="tname">'+a.name+'</div><div class="tdesc">'+a.desc+'</div></div>';
+      list.appendChild(d);
+    }
+    document.getElementById('trophyCount').textContent = won + ' / ' + ACHIEVEMENTS.length;
+  }
+  document.getElementById('trophyBtn').addEventListener('click', ()=>{ ensureAudio(); startScreen.classList.add('hidden'); trophyScreen.classList.remove('hidden'); renderTrophies(); });
+  document.getElementById('trophyBack').addEventListener('click', ()=>{ trophyScreen.classList.add('hidden'); showStart(); });
   function openShop(){
     startScreen.classList.add('hidden');
     overScreen.classList.add('hidden');
@@ -1342,7 +1860,9 @@
             save.balance -= item.cond.cost;
             save.unlocked[item.id] = true;
             save.selected[shopCat] = item.id;
+            save.stats.bought++;
             resolveActive(); saveGame(); renderShop(); sfxCollect();
+            checkAchievements();
           };
         } else {
           btn.textContent = '🔒 '+item.cond.cost+' 🌿'; btn.classList.add('locked'); btn.disabled = true;
