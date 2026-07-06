@@ -1,6 +1,9 @@
 # Lokale Claude-/Vorschau-Hilfsdateien – für das Hosting nicht nötig
 .claude/
 
+# Echte Umgebungsvariablen nie committen (.env.example ist die Vorlage)
+.env
+
 # OS / Editor
 Thumbs.db
 .DS_Store

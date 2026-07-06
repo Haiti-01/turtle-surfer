@@ -198,6 +198,31 @@
   .trophy.won .tname{ color:var(--accent); }
   .trophy .tdesc{ font-size:12px; opacity:.8; }
   .tlist{ max-height:52vh; overflow-y:auto; margin-top:14px; padding-right:4px; }
+
+  /* ---------- global leaderboard ---------- */
+  .namebox{ display:flex; gap:8px; margin-top:10px; justify-content:center; flex-wrap:wrap; }
+  .namebox input{
+    flex:1; min-width:140px; max-width:220px; padding:10px 14px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.1); color:#fff;
+    font-family:var(--font); font-size:14px; outline:none;
+  }
+  .namebox input:focus{ border-color:var(--accent2); }
+  .namebox button{
+    cursor:pointer; border:none; border-radius:12px; padding:10px 16px; font-family:var(--font);
+    font-weight:700; font-size:14px; color:#06304f; background:linear-gradient(180deg,#7ff0dc,#2bc7ad);
+  }
+  #submitLine{ font-size:13px; margin-top:10px; opacity:.92; min-height:17px; }
+  .blist{ margin-top:14px; max-height:50vh; overflow-y:auto; padding-right:4px; text-align:left; }
+  .brow{
+    display:flex; align-items:center; gap:10px; padding:8px 12px; margin-bottom:6px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; font-size:14px;
+  }
+  .brow .rank{ width:34px; text-align:center; font-weight:700; color:var(--accent); flex:none; }
+  .brow .bname{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+  .brow .bscore{ font-weight:700; color:var(--accent2); }
+  .brow.me{ border-color:rgba(56,224,200,.55); background:rgba(56,224,200,.1); }
+  .bstate{ margin-top:14px; font-size:13px; opacity:.85; line-height:1.5; }
+  .bstate a, #boardNameRow a{ color:var(--accent); }
 </style>
 </head>
 <body>
@@ -255,6 +280,7 @@
         <button class="play" id="startBtn">Los geht's!</button>
         <button class="play secondary" id="shopBtn">🛍️ Kosmetik-Shop</button>
         <button class="play secondary" id="trophyBtn">🏆 Trophäen</button>
+        <button class="play secondary" id="boardBtn">🌐 Bestenliste</button>
       </div>
       <div class="hint">Tipp: Fische kommen auf mittlerer Höhe — weiche nach oben, unten oder zur Seite aus.</div>
     </div>
@@ -268,8 +294,14 @@
       <div class="scoreline">Highscore: <b id="finalHi">0</b></div>
       <div id="newBestBadge" class="newbest" style="display:none">🎉 Neuer Rekord!</div>
       <div class="scoreline" id="earnedLine">🌿 Gesammelt: <b id="earnedAlgae">0</b></div>
+      <div id="submitLine"></div>
+      <div class="namebox" id="nameEntry" style="display:none">
+        <input id="nameInput" maxlength="16" placeholder="Spitzname (2–16 Zeichen)">
+        <button id="nameSaveBtn">Speichern</button>
+      </div>
       <div class="actions">
         <button class="play" id="restartBtn">Nochmal spielen</button>
+        <button class="play secondary" id="overBoardBtn">🌐 Bestenliste</button>
         <button class="play secondary" id="menuBtn">🏠 Menü &amp; Shop</button>
       </div>
       <div class="hint">Drücke <b>Leertaste</b> oder <b>Enter</b> für einen Neustart.</div>
@@ -307,8 +339,26 @@
       <button class="play" id="trophyBack">Zurück zum Menü</button>
     </div>
   </div>
+
+  <!-- Global leaderboard screen -->
+  <div class="overlay hidden" id="boardScreen">
+    <div class="card shop">
+      <div class="shop-head">
+        <div class="title small">🌐 Bestenliste</div>
+        <div class="wallet"><span>🏆 <b id="boardMyBest">0</b></span></div>
+      </div>
+      <div id="boardNameRow" class="bstate"></div>
+      <div class="namebox" id="boardNameEntry" style="display:none">
+        <input id="boardNameInput" maxlength="16" placeholder="Spitzname (2–16 Zeichen)">
+        <button id="boardNameSave">Speichern</button>
+      </div>
+      <div class="blist" id="boardList"></div>
+      <button class="play" id="boardBack">Zurück zum Menü</button>
+    </div>
+  </div>
 </div>
 
+<script src="leaderboard-config.js"></script>
 <script>
 "use strict";
 (function(){
@@ -782,6 +832,7 @@
   }
 
   window.addEventListener('keydown', (e)=>{
+    if(e.target && e.target.tagName === 'INPUT') return;  // don't hijack name typing
     ensureAudio();
     const k = e.key.toLowerCase();
     if(['arrowleft','arrowright','arrowup','arrowdown',' '].includes(k)) e.preventDefault();
@@ -791,7 +842,7 @@
       else if(k==='arrowup'||k==='w') move('up');
       else if(k==='arrowdown'||k==='s') move('down');
     } else {
-      if((k===' '||k==='enter') && shopScreen.classList.contains('hidden') && trophyScreen.classList.contains('hidden')) startGame();
+      if((k===' '||k==='enter') && shopScreen.classList.contains('hidden') && trophyScreen.classList.contains('hidden') && boardScreen.classList.contains('hidden')) startGame();
     }
   }, {passive:false});
 
@@ -897,6 +948,7 @@
     overScreen.classList.add('hidden');
     shopScreen.classList.add('hidden');
     trophyScreen.classList.add('hidden');
+    boardScreen.classList.add('hidden');
   }
   function gameOver(){
     state = S_OVER;
@@ -923,6 +975,7 @@
     document.getElementById('earnedAlgae').textContent = runAlgae;
     document.getElementById('newBestBadge').style.display = isBest ? 'inline-block' : 'none';
     hiVal.textContent = highscore;
+    handleScoreSubmission(finalScore);
     setTimeout(()=> overScreen.classList.remove('hidden'), 450);
   }
   document.getElementById('startBtn').addEventListener('click', startGame);
@@ -2082,6 +2135,7 @@
     overScreen.classList.add('hidden');
     shopScreen.classList.add('hidden');
     trophyScreen.classList.add('hidden');
+    boardScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
     refreshStart();
   }
@@ -2121,6 +2175,175 @@
   }
   document.getElementById('trophyBtn').addEventListener('click', ()=>{ ensureAudio(); startScreen.classList.add('hidden'); trophyScreen.classList.remove('hidden'); renderTrophies(); });
   document.getElementById('trophyBack').addEventListener('click', ()=>{ trophyScreen.classList.add('hidden'); showStart(); });
+
+  // ------------------------------------------------- global leaderboard
+  // Supabase REST (PostgREST): reads via select, writes ONLY through the
+  // submit_score() RPC (validated server-side, RLS blocks direct writes).
+  const boardScreen = document.getElementById('boardScreen');
+  const NAME_KEY = 'turtleSurferName';
+  let playerName = '';
+  try{ playerName = sanitizeName(localStorage.getItem(NAME_KEY) || ''); }catch(e){}
+  let pendingScore = 0;
+
+  function lbConfig(){
+    const c = window.LEADERBOARD_CONFIG;
+    return (c && c.url && c.anonKey) ? c : null;
+  }
+  function sanitizeName(n){
+    return String(n||'').replace(/[\u0000-\u001f<>]/g,'').trim().slice(0,16);
+  }
+  function saveName(n){
+    const clean = sanitizeName(n);
+    if(clean.length < 2) return false;
+    playerName = clean;
+    try{ localStorage.setItem(NAME_KEY, clean); }catch(e){}
+    return true;
+  }
+  function lbHeaders(cfg){
+    return { 'apikey': cfg.anonKey, 'Authorization': 'Bearer '+cfg.anonKey, 'Content-Type': 'application/json' };
+  }
+  async function lbFetchTop(){
+    const cfg = lbConfig();
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), 8000);
+    try{
+      const res = await fetch(cfg.url.replace(/\/$/,'')
+        + '/rest/v1/leaderboard?select=name,score&order=score.desc,created_at.asc&limit=20',
+        { headers: lbHeaders(cfg), signal: ctrl.signal });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      return await res.json();
+    } finally { clearTimeout(to); }
+  }
+  async function lbSubmit(name, score){
+    const cfg = lbConfig();
+    const ctrl = new AbortController();
+    const to = setTimeout(()=>ctrl.abort(), 8000);
+    try{
+      const res = await fetch(cfg.url.replace(/\/$/,'') + '/rest/v1/rpc/submit_score', {
+        method:'POST', headers: lbHeaders(cfg), signal: ctrl.signal,
+        body: JSON.stringify({ p_name: name, p_score: score })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+    } finally { clearTimeout(to); }
+  }
+
+  // called from gameOver(): submit (or ask for a name first)
+  function handleScoreSubmission(sc){
+    const line = document.getElementById('submitLine');
+    const entry = document.getElementById('nameEntry');
+    entry.style.display = 'none';
+    pendingScore = 0;
+    if(!lbConfig()){ line.textContent = ''; return; }
+    if(sc < 1){ line.textContent = ''; return; }
+    if(!playerName){
+      line.textContent = '🌐 Gib einen Spitznamen ein, um deinen Score global zu speichern:';
+      document.getElementById('nameInput').value = '';
+      entry.style.display = 'flex';
+      pendingScore = sc;
+      return;
+    }
+    submitScore(sc);
+  }
+  async function submitScore(sc){
+    const line = document.getElementById('submitLine');
+    line.textContent = '🌐 Speichere Score …';
+    try{
+      await lbSubmit(playerName, sc);
+      line.textContent = '✅ Global gespeichert als „'+playerName+'"';
+    }catch(e){
+      line.textContent = '⚠️ Bestenliste nicht erreichbar — Highscore bleibt lokal gespeichert.';
+    }
+  }
+
+  function renderBoardName(){
+    const row = document.getElementById('boardNameRow');
+    const entry = document.getElementById('boardNameEntry');
+    row.textContent = '';
+    if(playerName){
+      row.append('Du spielst als: ');
+      const b = document.createElement('b'); b.textContent = playerName; b.style.color = 'var(--accent2)';
+      row.append(b);
+      const a = document.createElement('a'); a.textContent = ' (ändern)'; a.href = '#';
+      a.addEventListener('click', (ev)=>{
+        ev.preventDefault();
+        document.getElementById('boardNameInput').value = playerName;
+        entry.style.display = 'flex';
+      });
+      row.append(a);
+      entry.style.display = 'none';
+    } else {
+      row.textContent = lbConfig() ? 'Wähle einen Spitznamen für die globale Liste:' : '';
+      entry.style.display = lbConfig() ? 'flex' : 'none';
+    }
+  }
+
+  async function openBoard(){
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+    shopScreen.classList.add('hidden');
+    trophyScreen.classList.add('hidden');
+    boardScreen.classList.remove('hidden');
+    document.getElementById('boardMyBest').textContent = highscore;
+    renderBoardName();
+    const list = document.getElementById('boardList');
+    list.textContent = '';
+    const state = document.createElement('div'); state.className = 'bstate';
+    if(!lbConfig()){
+      state.textContent = '🌐 Die Online-Bestenliste ist noch nicht konfiguriert (siehe README: Supabase-Setup). Dein lokaler Highscore: '+highscore;
+      list.appendChild(state);
+      return;
+    }
+    state.textContent = '⏳ Lade Bestenliste …';
+    list.appendChild(state);
+    try{
+      const rows = await lbFetchTop();
+      list.textContent = '';
+      if(!rows || !rows.length){
+        const d = document.createElement('div'); d.className = 'bstate';
+        d.textContent = 'Noch keine Einträge — sei der/die Erste!';
+        list.appendChild(d);
+        return;
+      }
+      rows.forEach((r, i)=>{
+        const d = document.createElement('div');
+        d.className = 'brow' + (playerName && r.name && r.name.toLowerCase() === playerName.toLowerCase() ? ' me' : '');
+        const rank = document.createElement('span'); rank.className = 'rank';
+        rank.textContent = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : String(i+1);
+        const nm = document.createElement('span'); nm.className = 'bname'; nm.textContent = r.name;
+        const sc = document.createElement('span'); sc.className = 'bscore'; sc.textContent = r.score;
+        d.append(rank, nm, sc);
+        list.appendChild(d);
+      });
+    }catch(e){
+      list.textContent = '';
+      const d = document.createElement('div'); d.className = 'bstate';
+      d.textContent = '⚠️ Bestenliste momentan nicht erreichbar. Dein lokaler Highscore: '+highscore;
+      list.appendChild(d);
+    }
+  }
+
+  document.getElementById('boardBtn').addEventListener('click', ()=>{ ensureAudio(); openBoard(); });
+  document.getElementById('overBoardBtn').addEventListener('click', ()=>{ openBoard(); });
+  document.getElementById('boardBack').addEventListener('click', ()=>{ boardScreen.classList.add('hidden'); showStart(); });
+  document.getElementById('nameSaveBtn').addEventListener('click', ()=>{
+    const line = document.getElementById('submitLine');
+    if(!saveName(document.getElementById('nameInput').value)){
+      line.textContent = '⚠️ Bitte 2–16 Zeichen eingeben.';
+      return;
+    }
+    document.getElementById('nameEntry').style.display = 'none';
+    if(pendingScore > 0){ const s = pendingScore; pendingScore = 0; submitScore(s); }
+  });
+  document.getElementById('boardNameSave').addEventListener('click', ()=>{
+    if(!saveName(document.getElementById('boardNameInput').value)){
+      toast('⚠️ Bitte 2–16 Zeichen eingeben.');
+      return;
+    }
+    toast('✅ Name gespeichert: '+playerName);
+    renderBoardName();
+  });
+  document.getElementById('nameInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('nameSaveBtn').click(); });
+  document.getElementById('boardNameInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') document.getElementById('boardNameSave').click(); });
   function openShop(){
     startScreen.classList.add('hidden');
     overScreen.classList.add('hidden');

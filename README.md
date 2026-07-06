@@ -97,6 +97,67 @@ die **seitlich pendeln**.
 Alles (Missionen, Fortschritt, Trophäen, Statistiken) wird im `localStorage`
 gespeichert und überlebt Browser-Neustarts.
 
+## 🌐 Globale Bestenliste (Supabase)
+
+Geräteübergreifende Top-20-Liste mit echtem Backend — jeder sieht beim Öffnen
+die aktuellen Scores aller Spieler.
+
+### Warum Supabase?
+
+- **Kostenloser Free-Tier ohne eigenen Server** — passt zu einer statischen
+  GitHub-Pages-Seite.
+- **Echtes Postgres + Row Level Security**: Zugriffsrechte werden in der
+  Datenbank erzwungen, nicht im (manipulierbaren) Frontend.
+- **Fertige REST-API (PostgREST)**: Das Spiel braucht *keine* zusätzliche
+  Library — zwei `fetch`-Aufrufe genügen. Firebase Firestore wäre die
+  Alternative, bringt aber ein größeres SDK mit und hat kein SQL/keine
+  serverseitigen Check-Constraints in dieser einfachen Form.
+
+### Setup (einmalig, ~5 Minuten)
+
+1. **Projekt anlegen:** [supabase.com](https://supabase.com) → „New project"
+   (Free-Tier reicht).
+2. **Tabelle + Sicherheit einrichten:** Dashboard → **SQL Editor** → Inhalt von
+   [`supabase-setup.sql`](supabase-setup.sql) einfügen → **Run**. Das erstellt
+   die Tabelle `leaderboard` (`id`, `name`, `score`, `created_at`), aktiviert
+   Row Level Security und legt die Funktion `submit_score()` an.
+3. **Keys eintragen:** Dashboard → **Settings → API** → *Project URL* und
+   *anon public key* kopieren und in [`leaderboard-config.js`](leaderboard-config.js)
+   eintragen. Committen & pushen — fertig.
+
+Solange die Config leer ist, läuft das Spiel unverändert, nur ohne
+Online-Liste (lokaler Highscore als Fallback).
+
+### Sicherheit
+
+- **Der `anon`-Key darf ins Frontend.** Er ist Supabases öffentlicher
+  Browser-Key; was er darf, bestimmt allein Row Level Security. In einem
+  Build-Setup (Vite/Webpack) käme er aus einer `.env`
+  (siehe [`.env.example`](.env.example)) — diese Seite hat keinen
+  Build-Schritt, daher liegt er in `leaderboard-config.js`.
+  **Der `service_role`-Key gehört dagegen niemals ins Frontend.**
+- **Nur Lesen + kontrolliertes Schreiben:** RLS erlaubt `SELECT` für alle;
+  `INSERT`/`UPDATE`/`DELETE` sind blockiert. Scores gehen ausschließlich durch
+  die `security definer`-Funktion `submit_score()` — niemand kann fremde
+  Einträge ändern oder löschen.
+- **Serverseitige Plausibilisierung:** Namenslänge 2–16 Zeichen, Score
+  1–500 000, und pro Name bleibt nur der **höchste** Score erhalten
+  (Update nur, wenn der neue Score höher ist).
+- **Robustheit im Spiel:** `try/catch` + 8-Sekunden-Timeout um alle Requests,
+  Ladeanzeige beim Öffnen, klare Hinweise bei nicht erreichbarem Backend und
+  lokaler Highscore als Fallback. Namen werden ausschließlich per
+  `textContent` gerendert (kein XSS).
+
+### Ablauf im Spiel
+
+- Beim ersten Game Over fragt das Spiel nach einem **Spitznamen** (wird im
+  `localStorage` gemerkt, änderbar in der Bestenliste).
+- Danach wird jeder Score bei Game Over automatisch gesendet; der Server
+  behält pro Name das Maximum.
+- **🌐 Bestenliste** ist vom Startbildschirm und vom Game-Over-Screen aus
+  erreichbar: Top 20, sortiert nach Score, mit Rang (🥇🥈🥉), Name und
+  Punktzahl — der eigene Eintrag ist hervorgehoben.
+
 ## ▶️ Lokal spielen
 
 Einfach `index.html` per Doppelklick im Browser öffnen — fertig.
@@ -124,9 +185,12 @@ Build-Command nötig, Publish-Verzeichnis ist das Projektwurzelverzeichnis.
 ## 📁 Struktur
 
 ```
-index.html    # das komplette Spiel (Grafik, Logik, Sound)
-.nojekyll      # sagt GitHub Pages: Dateien unverändert ausliefern
-.gitignore     # schließt lokale Hilfsdateien (.claude/) aus
+index.html            # das komplette Spiel (Grafik, Logik, Sound)
+leaderboard-config.js # Supabase-URL + anon-Key für die Online-Bestenliste
+supabase-setup.sql    # einmaliges Setup-Skript (Tabelle, RLS, submit_score)
+.env.example          # Vorlage für Build-Setups (hier nur Doku)
+.nojekyll             # sagt GitHub Pages: Dateien unverändert ausliefern
+.gitignore            # schließt lokale Hilfsdateien (.claude/, .env) aus
 ```
 
 Der Ordner `.claude/` (kleiner Node-Vorschauserver) ist nur für die lokale Entwicklung
