@@ -288,6 +288,7 @@
         <button class="tab" data-cat="background">🌊 Hintergrund</button>
         <button class="tab" data-cat="algae">🌿 Algen</button>
         <button class="tab" data-cat="obstacle">🐟 Kreaturen</button>
+        <button class="tab" data-cat="urchin">🟣 Seeigel</button>
       </div>
       <div class="grid" id="shopGrid"></div>
       <div class="stat">Insgesamt gesammelte Algen: <b id="shopTotal">0</b></div>
@@ -317,7 +318,7 @@
   // ---------------------------------------------------------------- layout
   let W = 0, H = 0, DPR = 1;
   let centerX = 0, horizonY = 0, bottomY = 0, laneSpread = 0, unitHeight = 0, PW = 0;
-  const camDepth = 4;      // perspective strength
+  const camDepth = 3.1;    // perspective strength (lower = stronger convergence)
   const ZFAR = 9;          // spawn depth
   let FISH_BASE, TURTLE_R, HOOK_BASE, URCHIN_BASE, ALGAE_BASE, POWER_BASE, BUBBLE_SCALE;
 
@@ -332,10 +333,10 @@
 
     PW = Math.min(W, 560);                 // virtual play-column width (keeps phone feel on desktop)
     centerX = W / 2;
-    horizonY = H * 0.30;
-    bottomY = H * 0.965;
-    laneSpread = PW * 0.30;
-    unitHeight = Math.min(H * 0.155, PW * 0.30);
+    horizonY = H * 0.26;
+    bottomY = H * 0.97;
+    laneSpread = PW * 0.34;
+    unitHeight = Math.min(H * 0.15, PW * 0.29);
 
     FISH_BASE   = PW * 0.22;
     TURTLE_R    = PW * 0.155;
@@ -396,6 +397,8 @@
   const POWER_GLOW = { shield:'rgba(120,220,255,', magnet:'rgba(255,120,120,', laser:'rgba(255,235,120,', boost:'rgba(255,170,80,', slow:'rgba(170,140,255,' };
   let combo = 0, comboBest = 0;            // consecutive algae without miss/hit
   let particles = [];
+  let decors = [];                         // passing scenery: coral reefs & tunnel arches
+  let decorAccum = 0, decorGap = 10;
 
   // -------------------------------------------------------- cosmetics catalog
   // cond.k: 'free' | 'algae' (cost, buy with balance) | 'score' (score milestone)
@@ -403,44 +406,78 @@
     turtle: [
       { id:'t_classic', name:'Klassisch', cond:{k:'free'}, shape:'sea',
         shell:['#8ad17a','#4e9e3f','#2c6a26'], rim:'#b98b3e', flip:'#2f9e6f', flipEdge:'#4bbd86', head:['#5cc98f','#2f9e6f'], scute:'rgba(30,70,25,.55)' },
-      { id:'t_ocean', name:'Ozeanblau', cond:{k:'algae',cost:60}, shape:'sea',
+      { id:'t_ocean', name:'Ozeanblau', cond:{k:'algae',cost:250}, shape:'sea',
         shell:['#8fd6ee','#3f9ecf','#1e5f8f'], rim:'#cdd6de', flip:'#2f7f9e', flipEdge:'#5fc0d6', head:['#6fc6da','#2f7f9e'], scute:'rgba(20,50,70,.5)' },
-      { id:'t_sunny', name:'Sonnengelb', cond:{k:'algae',cost:150}, shape:'sea',
+      { id:'t_sunny', name:'Sonnengelb', cond:{k:'algae',cost:600}, shape:'sea',
         shell:['#ffe486','#f2b224','#a9760f'], rim:'#a86a12', flip:'#e0a41c', flipEdge:'#ffd24d', head:['#ffd35c','#e0a41c'], scute:'rgba(90,60,10,.5)' },
-      { id:'t_hawksbill', name:'Karettschildkröte', cond:{k:'algae',cost:350}, shape:'sea', pattern:'mosaic',
+      { id:'t_rose', name:'Korallenrot', cond:{k:'algae',cost:1200}, shape:'sea',
+        shell:['#ff9d9d','#e05252','#8f1f1f'], rim:'#ffd2c2', flip:'#c94848', flipEdge:'#ff9d8a', head:['#ff8f7a','#c94848'], scute:'rgba(90,20,20,.55)' },
+      { id:'t_hawksbill', name:'Karettschildkröte', cond:{k:'algae',cost:2000}, shape:'sea', pattern:'mosaic',
         shell:['#e9be74','#a86a2c','#5c3410'], rim:'#3c2408', flip:'#8a5a2a', flipEdge:'#c89658', head:['#c99a5c','#8a5a2a'], scute:'rgba(40,20,5,.7)' },
-      { id:'t_tortoise', name:'Landschildkröte', cond:{k:'score',score:2500}, shape:'tortoise',
+      { id:'t_tortoise', name:'Landschildkröte', cond:{k:'score',score:6000}, shape:'tortoise',
         shell:['#c39a56','#7a5522','#41290f'], rim:'#39240f', flip:'#6f5a34', flipEdge:'#9a8452', head:['#9a8050','#6a5230'], scute:'rgba(40,25,5,.7)' },
-      { id:'t_golden', name:'Goldpanzer', cond:{k:'algae',cost:900}, shape:'sea', glow:'#ffdf6b',
+      { id:'t_neon', name:'Neon-Reptil', cond:{k:'algae',cost:3500}, shape:'sea', glow:'#54ff9b',
+        shell:['#1c3a2e','#123024','#071811'], rim:'#54ff9b', flip:'#1f5c40', flipEdge:'#54ff9b', head:['#2c7a52','#123024'], scute:'rgba(84,255,155,.65)' },
+      { id:'t_midnight', name:'Mitternacht', cond:{k:'score',score:12000}, shape:'sea',
+        shell:['#3a4a6b','#1d2740','#0a0f1e'], rim:'#8fa3cf', flip:'#26304d', flipEdge:'#4a5a80', head:['#3d4a6e','#1d2740'], scute:'rgba(160,180,220,.4)' },
+      { id:'t_golden', name:'Goldpanzer', cond:{k:'algae',cost:5000}, shape:'sea', glow:'#ffdf6b',
         shell:['#fff0a0','#f5c518','#a67c00'], rim:'#fff2a8', flip:'#d4af37', flipEdge:'#ffe98a', head:['#f2d360','#c8a020'], scute:'rgba(120,90,0,.45)' },
-      { id:'t_crystal', name:'Kristallpanzer', cond:{k:'score',score:8000}, shape:'sea', glow:'#9fd0ff', sparkle:true,
+      { id:'t_ghost', name:'Geisterpanzer', cond:{k:'score',score:20000}, shape:'sea', ghost:true, glow:'#cfe8ff',
+        shell:['#eef7ff','#c9dcea','#93aec2'], rim:'#ffffff', flip:'#b9cedd', flipEdge:'#e8f4ff', head:['#dcebf5','#b9cedd'], scute:'rgba(255,255,255,.6)' },
+      { id:'t_crystal', name:'Kristallpanzer', cond:{k:'score',score:30000}, shape:'sea', glow:'#9fd0ff', sparkle:true,
         shell:['#cdeeff','#7fb8ff','#4a6fd0'], rim:'#e6f2ff', flip:'#7fa8ff', flipEdge:'#cfe8ff', head:['#a6d4ff','#6f9fe0'], scute:'rgba(255,255,255,.5)' },
+      { id:'t_rainbow', name:'Regenbogen', cond:{k:'algae',cost:8000}, shape:'sea', rainbow:true, sparkle:true,
+        shell:['#ff8a8a','#ffd24d','#54ff9b'], rim:'#ffffff', flip:'#7fa8ff', flipEdge:'#ff9fce', head:['#ffd24d','#ff8a8a'], scute:'rgba(255,255,255,.55)' },
     ],
     background: [
       { id:'b_reef', name:'Korallenriff', cond:{k:'free'},
         sky:[[0,'#48c7f0'],[.28,'#1f92cf'],[.62,'#0d5a97'],[1,'#052a4d']], ray:'rgba(180,235,255,', rayA:.16, surface:.5, floor:['rgba(214,183,120,','rgba(150,120,70,'], decor:'reef' },
-      { id:'b_deep', name:'Tiefsee', cond:{k:'algae',cost:120},
+      { id:'b_lagoon', name:'Lagune', cond:{k:'algae',cost:400},
+        sky:[[0,'#7fffe0'],[.3,'#2fd6c0'],[.65,'#0f8fa0'],[1,'#075064']], ray:'rgba(220,255,245,', rayA:.2, surface:.55, floor:['rgba(235,215,160,','rgba(180,150,95,'], decor:'reef' },
+      { id:'b_deep', name:'Tiefsee', cond:{k:'algae',cost:1000},
         sky:[[0,'#0d3f60'],[.4,'#062a45'],[1,'#01121f']], ray:'rgba(120,200,255,', rayA:.06, surface:.14, floor:['rgba(40,60,80,','rgba(10,20,35,'], decor:'deep' },
-      { id:'b_sunset', name:'Sonnenuntergang', cond:{k:'algae',cost:400},
+      { id:'b_sunset', name:'Sonnenuntergang', cond:{k:'algae',cost:2200},
         sky:[[0,'#ffcf8a'],[.16,'#ff9b6b'],[.4,'#e0608f'],[.7,'#7a4a9e'],[1,'#241a4d']], ray:'rgba(255,210,160,', rayA:.14, surface:.4, floor:['rgba(150,90,90,','rgba(70,40,60,'], decor:'sunset' },
-      { id:'b_cave', name:'Höhle', cond:{k:'score',score:4000},
+      { id:'b_night', name:'Sternennacht', cond:{k:'algae',cost:4000},
+        sky:[[0,'#1b2a5e'],[.3,'#101b40'],[.7,'#080f26'],[1,'#030612']], ray:'rgba(190,210,255,', rayA:.08, surface:.3, floor:['rgba(90,100,140,','rgba(30,35,60,'], decor:'night' },
+      { id:'b_cave', name:'Höhle', cond:{k:'score',score:9000},
         sky:[[0,'#20423f'],[.5,'#102826'],[1,'#050f10']], ray:'rgba(120,220,180,', rayA:.05, surface:.12, floor:['rgba(50,60,55,','rgba(15,25,22,'], decor:'cave' },
+      { id:'b_arctic', name:'Eismeer', cond:{k:'score',score:16000},
+        sky:[[0,'#e8fbff'],[.25,'#9fdcf0'],[.6,'#4a9cc9'],[1,'#1b4a75']], ray:'rgba(255,255,255,', rayA:.22, surface:.65, floor:['rgba(220,240,250,','rgba(140,180,205,'], decor:'ice' },
+      { id:'b_abyss', name:'Abgrund', cond:{k:'score',score:25000},
+        sky:[[0,'#241a44'],[.4,'#140d2c'],[1,'#050310']], ray:'rgba(190,140,255,', rayA:.05, surface:.1, floor:['rgba(60,45,95,','rgba(20,12,40,'], decor:'abyss' },
     ],
     algae: [
       { id:'a_green',  name:'Klassisch Grün', cond:{k:'free'}, colors:['#2e9c4f','#7bef8f'], glow:'rgba(120,255,170,', shape:'kelp' },
-      { id:'a_pink',   name:'Koralle Pink', cond:{k:'algae',cost:80}, colors:['#c94f8f','#ff9fce'], glow:'rgba(255,150,205,', shape:'coral' },
-      { id:'a_bubble', name:'Blaubeeren', cond:{k:'algae',cost:220}, colors:['#2f6fd0','#8fd0ff'], glow:'rgba(150,205,255,', shape:'round' },
-      { id:'a_golden', name:'Goldalge', cond:{k:'score',score:5000}, colors:['#c8961e','#ffe98a'], glow:'rgba(255,220,120,', shape:'kelp' },
+      { id:'a_pink',   name:'Koralle Pink', cond:{k:'algae',cost:300}, colors:['#c94f8f','#ff9fce'], glow:'rgba(255,150,205,', shape:'coral' },
+      { id:'a_bubble', name:'Blaubeeren', cond:{k:'algae',cost:800}, colors:['#2f6fd0','#8fd0ff'], glow:'rgba(150,205,255,', shape:'round' },
+      { id:'a_teal',   name:'Türkis-Tang', cond:{k:'algae',cost:1600}, colors:['#0f8f8f','#6ff2e0'], glow:'rgba(110,240,225,', shape:'kelp' },
+      { id:'a_violet', name:'Tiefsee-Koralle', cond:{k:'algae',cost:3000}, colors:['#6a3fb0','#c39aff'], glow:'rgba(190,150,255,', shape:'coral' },
+      { id:'a_rainbow',name:'Regenbogen-Kelp', cond:{k:'algae',cost:6000}, colors:['#ff6b9d','#ffd24d'], glow:'rgba(255,190,140,', shape:'kelp' },
+      { id:'a_golden', name:'Goldalge', cond:{k:'score',score:10000}, colors:['#c8961e','#ffe98a'], glow:'rgba(255,220,120,', shape:'kelp' },
+      { id:'a_ice',    name:'Eiskristalle', cond:{k:'score',score:18000}, colors:['#7fb8d9','#eafaff'], glow:'rgba(220,245,255,', shape:'round' },
     ],
     obstacle: [
       { id:'o_fish',   name:'Fische', cond:{k:'free'}, style:'fish' },
-      { id:'o_puffer', name:'Kugelfische', cond:{k:'algae',cost:100}, style:'puffer' },
-      { id:'o_jelly',  name:'Quallen', cond:{k:'algae',cost:300}, style:'jelly' },
-      { id:'o_shark',  name:'Haie', cond:{k:'score',score:6000}, style:'shark' },
+      { id:'o_puffer', name:'Kugelfische', cond:{k:'algae',cost:400}, style:'puffer' },
+      { id:'o_jelly',  name:'Quallen', cond:{k:'algae',cost:1200}, style:'jelly' },
+      { id:'o_crab',   name:'Krabben', cond:{k:'algae',cost:2400}, style:'crab' },
+      { id:'o_ray',    name:'Rochen', cond:{k:'algae',cost:4500}, style:'ray' },
+      { id:'o_dragon', name:'Seedrachen', cond:{k:'algae',cost:7000}, style:'dragon' },
+      { id:'o_shark',  name:'Haie', cond:{k:'score',score:12000}, style:'shark' },
+      { id:'o_orca',   name:'Orcas', cond:{k:'score',score:22000}, style:'orca' },
+    ],
+    urchin: [
+      { id:'u_purple', name:'Violett', cond:{k:'free'}, spine:'#4a2f8f', body:['#9b6bd6','#5b3aa0'] },
+      { id:'u_red',    name:'Feuerrot', cond:{k:'algae',cost:350}, spine:'#8f1f1f', body:['#ff7a5c','#a03020'] },
+      { id:'u_blue',   name:'Königsblau', cond:{k:'algae',cost:1000}, spine:'#1f3a8f', body:['#6b9bd6','#2a4aa0'] },
+      { id:'u_gold',   name:'Golden', cond:{k:'algae',cost:2800}, spine:'#a67c00', body:['#ffe98a','#c8961e'], glow:'rgba(255,220,120,' },
+      { id:'u_crystal',name:'Kristall', cond:{k:'algae',cost:5500}, spine:'#9fd0ff', body:['#eafaff','#7fb8d9'], glow:'rgba(190,230,255,' },
+      { id:'u_neon',   name:'Neon', cond:{k:'score',score:15000}, spine:'#54ff9b', body:['#c8ffe0','#1f8f5c'], glow:'rgba(84,255,155,' },
     ],
   };
-  const CATS = ['turtle','background','algae','obstacle'];
-  const DEFAULT_SELECTED = { turtle:'t_classic', background:'b_reef', algae:'a_green', obstacle:'o_fish' };
+  const CATS = ['turtle','background','algae','obstacle','urchin'];
+  const DEFAULT_SELECTED = { turtle:'t_classic', background:'b_reef', algae:'a_green', obstacle:'o_fish', urchin:'u_purple' };
 
   // -------------------------------------------------------------- persistence
   const SAVE_KEY = 'turtleSurferSave';
@@ -533,17 +570,22 @@
 
   // ----------------------------------------------------------- achievements
   const ACHIEVEMENTS = [
-    { id:'first1000', icon:'🏁', name:'Flossenstart',      desc:'Erreiche 1000 Punkte in einer Runde',        test:s=>s.hi>=1000 },
-    { id:'score5000', icon:'🌊', name:'Meeresprofi',       desc:'Erreiche 5000 Punkte in einer Runde',        test:s=>s.hi>=5000 },
-    { id:'algae100',  icon:'🌿', name:'Algen-Gourmet',     desc:'Sammle insgesamt 100 Algen',                 test:s=>s.total>=100 },
-    { id:'algae500',  icon:'🥬', name:'Algen-Baron',       desc:'Sammle insgesamt 500 Algen',                 test:s=>s.total>=500 },
-    { id:'combo10',   icon:'🔥', name:'Combo-König',       desc:'Erreiche eine 10er-Combo',                   test:s=>s.stats.maxCombo>=10 },
+    { id:'first1000', icon:'🏁', name:'Flossenstart',      desc:'Erreiche 2500 Punkte in einer Runde',        test:s=>s.hi>=2500 },
+    { id:'score5000', icon:'🌊', name:'Meeresprofi',       desc:'Erreiche 10.000 Punkte in einer Runde',      test:s=>s.hi>=10000 },
+    { id:'score25k',  icon:'👑', name:'Herrscher der Meere', desc:'Erreiche 25.000 Punkte in einer Runde',    test:s=>s.hi>=25000 },
+    { id:'algae100',  icon:'🌿', name:'Algen-Gourmet',     desc:'Sammle insgesamt 250 Algen',                 test:s=>s.total>=250 },
+    { id:'algae500',  icon:'🥬', name:'Algen-Baron',       desc:'Sammle insgesamt 2000 Algen',                test:s=>s.total>=2000 },
+    { id:'algae5000', icon:'🌱', name:'Algen-Legende',     desc:'Sammle insgesamt 6000 Algen',                test:s=>s.total>=6000 },
+    { id:'combo10',   icon:'🔥', name:'Combo-König',       desc:'Erreiche eine 15er-Combo',                   test:s=>s.stats.maxCombo>=15 },
     { id:'allpower',  icon:'✨', name:'Alles ausprobiert', desc:'Nutze alle 5 Power-Ups mindestens einmal',   test:s=>Object.keys(s.stats.powerTypes).length>=5 },
-    { id:'runs5',     icon:'🎮', name:'Dranbleiben',       desc:'Spiele 5 Runden',                            test:s=>s.stats.runs>=5 },
-    { id:'laser10',   icon:'⚡', name:'Zap!',              desc:'Zerstöre 10 Hindernisse mit dem Laser',      test:s=>s.stats.laser>=10 },
-    { id:'shield1',   icon:'🛡️', name:'Knapp vorbei',      desc:'Überlebe einen Treffer dank Luftblase',      test:s=>s.stats.shields>=1 },
+    { id:'runs5',     icon:'🎮', name:'Dranbleiben',       desc:'Spiele 25 Runden',                           test:s=>s.stats.runs>=25 },
+    { id:'runs100',   icon:'🐢', name:'Marathon-Schwimmer', desc:'Spiele 100 Runden',                         test:s=>s.stats.runs>=100 },
+    { id:'laser10',   icon:'⚡', name:'Zap!',              desc:'Zerstöre 50 Hindernisse mit dem Laser',      test:s=>s.stats.laser>=50 },
+    { id:'shield1',   icon:'🛡️', name:'Knapp vorbei',      desc:'Überlebe 10 Treffer dank Luftblase',         test:s=>s.stats.shields>=10 },
     { id:'shopper',   icon:'🛍️', name:'Shopping-Tour',     desc:'Kaufe dein erstes Cosmetic',                 test:s=>s.stats.bought>=1 },
-    { id:'mission5',  icon:'🎯', name:'Auftragsschwimmer', desc:'Schließe 5 Missionen ab',                    test:s=>s.stats.missionsDone>=5 },
+    { id:'shopper10', icon:'💎', name:'Sammler',           desc:'Kaufe 10 Cosmetics',                         test:s=>s.stats.bought>=10 },
+    { id:'mission5',  icon:'🎯', name:'Auftragsschwimmer', desc:'Schließe 25 Missionen ab',                   test:s=>s.stats.missionsDone>=25 },
+    { id:'hooks300',  icon:'🪝', name:'Aalglatt',          desc:'Weiche insgesamt 300 Angelhaken aus',        test:s=>s.stats.hooksDodged>=300 },
   ];
   function checkAchievements(){
     let won = false;
@@ -713,6 +755,23 @@
     powerGap = rand(9, 16);
   }
 
+  function spawnDecorEvent(){
+    decorGap = rand(10, 24);
+    if(Math.random() < 0.35){
+      // tunnel: a run of rock arches, reef corals flanking the entrance
+      const n = 3 + (Math.random()*3|0);
+      for(let i=0;i<n;i++) decors.push({ kind:'arch', z: ZFAR + i*1.35, seed: Math.random()*Math.PI*2 });
+      for(const s of [-1,1]) decors.push({ kind:'coral', side: s*rand(2.0,2.5), z: ZFAR - 0.4, seed: Math.random()*Math.PI*2, v:(Math.random()*3|0) });
+    } else {
+      // coral reef passing by on one or both sides
+      const sides = Math.random()<0.5 ? [Math.random()<0.5 ? -1 : 1] : [-1,1];
+      for(const s of sides){
+        const n = 2 + (Math.random()*3|0);
+        for(let i=0;i<n;i++) decors.push({ kind:'coral', side: s*rand(1.9,2.8), z: ZFAR + i*rand(0.5,1.0), seed: Math.random()*Math.PI*2, v:(Math.random()*3|0) });
+      }
+    }
+  }
+
   // ------------------------------------------------------------------ input
   function move(dir){
     if(state !== S_PLAY) return;
@@ -816,7 +875,8 @@
 
   function resetGame(){
     obstacles = []; algae = []; popups = [];
-    powerups = []; particles = [];
+    powerups = []; particles = []; decors = [];
+    decorAccum = 0; decorGap = 10;
     turtle.lane = 1; turtle.band = 1;
     turtle.laneF = 0; turtle.heightF = 1; turtle.tilt = 0; turtle.laneVel = 0;
     score = 0; speed = 2.2; elapsed = 0; runAlgae = 0;
@@ -986,6 +1046,12 @@
       }
     }
     powerups = powerups.filter(u => u.z > -0.6);
+
+    // passing scenery (coral reefs, tunnel arches)
+    decorAccum += eff * dt;
+    if(decorAccum >= decorGap){ decorAccum -= decorGap; spawnDecorEvent(); }
+    for(const d of decors) d.z -= eff * dt;
+    decors = decors.filter(d => d.z > -1.4);
   }
 
   function updateCommon(dt){
@@ -1123,6 +1189,35 @@
         ctx.beginPath(); ctx.moveTo(x-13,y); ctx.lineTo(x-22,y-6); ctx.lineTo(x-22,y+6); ctx.closePath(); ctx.fill();
       }
       ctx.restore();
+    } else if(type==='night'){
+      for(let i=0;i<26;i++){
+        const x = (i*149.3)%W, y = ((i*83.7)%(H*0.35));
+        const tw = 0.4 + 0.6*Math.abs(Math.sin(gameTime*1.3 + i*1.7));
+        ctx.fillStyle = 'rgba(230,240,255,'+(tw*0.7).toFixed(2)+')';
+        ctx.beginPath(); ctx.arc(x,y,1.3,0,Math.PI*2); ctx.fill();
+      }
+      const mg = ctx.createRadialGradient(W*0.75,H*0.08,4, W*0.75,H*0.08,H*0.3);
+      mg.addColorStop(0,'rgba(240,246,255,.5)'); mg.addColorStop(1,'rgba(240,246,255,0)');
+      ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(W*0.75,H*0.08,H*0.3,0,Math.PI*2); ctx.fill();
+    } else if(type==='ice'){
+      ctx.save(); ctx.fillStyle = 'rgba(235,250,255,.75)';
+      for(let i=0;i<8;i++){
+        const x = W*(i/7), w = W*0.05, hgt = H*(0.05 + 0.05*((i*3)%3));
+        ctx.beginPath(); ctx.moveTo(x-w,0); ctx.lineTo(x+w,0); ctx.lineTo(x,hgt); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      for(let i=0;i<16;i++){
+        const x = (i*171 + gameTime*6)%W, y = H*0.15 + ((i*97)%(H*0.6));
+        ctx.fillStyle = 'rgba(255,255,255,.5)';
+        ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2); ctx.fill();
+      }
+    } else if(type==='abyss'){
+      for(let i=0;i<30;i++){
+        const x = (i*137.5)%W, y = H*0.15 + ((i*89.3)%(H*0.75));
+        const tw = 0.3 + 0.5*Math.abs(Math.sin(gameTime*1.1 + i));
+        ctx.fillStyle = 'rgba(200,150,255,'+(tw*0.45).toFixed(2)+')';
+        ctx.beginPath(); ctx.arc(x,y,1.5*BUBBLE_SCALE+1,0,Math.PI*2); ctx.fill();
+      }
     }
   }
   function coralBlob(x,y,s){
@@ -1163,6 +1258,46 @@
     }
   }
 
+  // scrolling sand texture: ripples & pebbles anchored to world rows so they
+  // stream toward the camera at game speed
+  function frac(x){ return x - Math.floor(x); }
+  function drawFloor(){
+    const bg = active.background;
+    const spacing = 0.9;
+    const base = Math.floor(stripeScroll / spacing);
+    const rows = Math.ceil(ZFAR/spacing) + 1;
+    for(let i=0; i<rows; i++){
+      const rowIdx = base + i;
+      const z = rowIdx*spacing - stripeScroll;
+      if(z < 0.03 || z > ZFAR) continue;
+      const s1 = frac(Math.sin(rowIdx*127.1)*43758.5453);
+      const fade = 1 - z/ZFAR;
+      // sand ripples (flattened light arcs)
+      const ref = project(0, 0, z);
+      ctx.strokeStyle = 'rgba(255,240,205,'+(0.10*fade).toFixed(3)+')';
+      ctx.lineWidth = Math.max(1, 2.2*ref.scale);
+      for(let k=0;k<3;k++){
+        const wx = -1.7 + frac(s1*7.31 + k*0.33)*3.4;
+        const p = project(wx, 0, z);
+        const w = laneSpread * 0.4 * p.scale;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, w, w*0.22, 0, Math.PI*1.1, Math.PI*1.9);
+        ctx.stroke();
+      }
+      // pebbles
+      for(let k=0;k<2;k++){
+        const fx = frac(s1*13.7 + k*0.61);
+        const wx = -1.9 + fx*3.8;
+        const p = project(wx, 0, z);
+        const r = Math.max(1, PW*0.014*p.scale*(0.6 + frac(s1*3 + k)*0.8));
+        ctx.fillStyle = bg.floor[1] + (0.5*fade).toFixed(3)+')';
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, r, r*0.6, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,235,200,'+(0.20*fade).toFixed(3)+')';
+        ctx.beginPath(); ctx.ellipse(p.x - r*0.25, p.y - r*0.2, r*0.4, r*0.25, 0, 0, Math.PI*2); ctx.fill();
+      }
+    }
+  }
+
   function drawBubbles(){
     ctx.save();
     for(const b of bubbles){
@@ -1192,9 +1327,18 @@
 
   // ---- Turtle (rear 3/4 view), styled by a skin object
   function drawTurtle(g, cx, cy, R, tilt, skin){
+    if(skin.rainbow){
+      const h = (gameTime*50)%360;
+      skin = Object.assign({}, skin, {
+        shell:['hsl('+(h|0)+',85%,75%)','hsl('+(((h+40)%360)|0)+',75%,55%)','hsl('+(((h+80)%360)|0)+',70%,35%)'],
+        flip:'hsl('+(((h+120)%360)|0)+',70%,45%)', flipEdge:'hsl('+(((h+160)%360)|0)+',80%,70%)',
+        head:['hsl('+(((h+200)%360)|0)+',75%,65%)','hsl('+(((h+240)%360)|0)+',70%,45%)']
+      });
+    }
     g.save();
     g.translate(cx, cy);
     g.rotate(tilt);
+    if(skin.ghost) g.globalAlpha = 0.72;
     if(skin.glow){
       const au = g.createRadialGradient(0,0,R*0.4, 0,0,R*1.6);
       au.addColorStop(0, hexA(skin.glow,0.45));
@@ -1309,14 +1453,99 @@
   }
 
   // ---- Oncoming creature (styled obstacle: fish / puffer / jelly / shark)
+  const ORCA_PAL = { top:'#233140', side:'#141e29', fin:'#0c1219', belly:'#f2f7fa', belly2:'#ffffff', patch:true };
   function drawFish(g, cx, cy, S, color, seed, style){
     g.save();
     g.translate(cx, cy);
     if(style==='puffer') drawPuffer(g,S,color,seed);
     else if(style==='jelly') drawJelly(g,S,color,seed);
     else if(style==='shark') drawShark(g,S,seed);
+    else if(style==='orca') drawShark(g,S,seed,ORCA_PAL);
+    else if(style==='crab') drawCrab(g,S,seed);
+    else if(style==='ray') drawRay(g,S,seed);
+    else if(style==='dragon') drawDragon(g,S,seed);
     else drawFishBody(g,S,color,seed);
     g.restore();
+  }
+
+  function drawCrab(g,S,seed){
+    const wig = Math.sin(gameTime*6 + seed);
+    const bw = S*0.5, bh = S*0.38;
+    g.strokeStyle = '#a03020'; g.lineWidth = Math.max(1.5, S*0.05); g.lineCap = 'round';
+    for(const s of [-1,1]) for(let i=0;i<3;i++){
+      g.beginPath(); g.moveTo(s*bw*0.5, bh*0.2);
+      g.lineTo(s*(bw*0.9 + i*S*0.07), bh*0.4 + Math.sin(0.5+i*0.4+wig*0.3)*S*0.07);
+      g.stroke();
+    }
+    for(const s of [-1,1]){
+      g.save(); g.translate(s*bw*1.05, -bh*0.55); g.rotate(s*(0.3 + wig*0.12));
+      g.fillStyle = '#e05238';
+      g.beginPath(); g.ellipse(0,0,S*0.19,S*0.14,0,0,Math.PI*2); g.fill();
+      g.fillStyle = '#f2775c';
+      g.beginPath(); g.ellipse(s*S*0.05,-S*0.08,S*0.1,S*0.07,s*0.5,0,Math.PI*2); g.fill();
+      g.restore();
+    }
+    const grad = g.createRadialGradient(-bw*0.3,-bh*0.4,S*0.05, 0,0,bw*1.1);
+    grad.addColorStop(0,'#ff8a66'); grad.addColorStop(1,'#c03a24');
+    g.fillStyle = grad;
+    g.beginPath(); g.ellipse(0,0,bw,bh,0,0,Math.PI*2); g.fill();
+    for(const s of [-1,1]){
+      g.strokeStyle = '#8f2416'; g.lineWidth = Math.max(1,S*0.035);
+      g.beginPath(); g.moveTo(s*bw*0.3,-bh*0.6); g.lineTo(s*bw*0.38,-bh*1.05); g.stroke();
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(s*bw*0.38,-bh*1.1,S*0.09,0,Math.PI*2); g.fill();
+      g.fillStyle = '#20222b'; g.beginPath(); g.arc(s*bw*0.38,-bh*1.08,S*0.045,0,Math.PI*2); g.fill();
+    }
+    g.strokeStyle = 'rgba(70,15,10,.7)'; g.lineWidth = Math.max(1,S*0.03);
+    g.beginPath(); g.arc(0,bh*0.25,bw*0.25,0.2*Math.PI,0.8*Math.PI); g.stroke();
+  }
+
+  function drawRay(g,S,seed){
+    const flap = Math.sin(gameTime*4 + seed);
+    const bw = S*0.32, bh = S*0.5;
+    for(const s of [-1,1]){
+      g.fillStyle = '#3d5a80';
+      g.beginPath();
+      g.moveTo(s*bw*0.4, -bh*0.2);
+      g.quadraticCurveTo(s*S*0.95, -bh*0.55 + flap*S*0.15, s*S*1.0, flap*S*0.1);
+      g.quadraticCurveTo(s*S*0.6, bh*0.45, s*bw*0.3, bh*0.35);
+      g.closePath(); g.fill();
+    }
+    g.strokeStyle = '#2c4460'; g.lineWidth = Math.max(1.5,S*0.05); g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0,-bh*0.6); g.quadraticCurveTo(flap*S*0.15,-bh*1.2, flap*S*0.25,-bh*1.5); g.stroke();
+    const grad = g.createLinearGradient(0,-bh,0,bh);
+    grad.addColorStop(0,'#54749c'); grad.addColorStop(1,'#8fa8c9');
+    g.fillStyle = grad;
+    g.beginPath(); g.ellipse(0,0,bw,bh,0,0,Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(240,246,252,.85)';
+    g.beginPath(); g.ellipse(0,bh*0.35,bw*0.6,bh*0.35,0,0,Math.PI*2); g.fill();
+    creatureEyes(g, bw*0.45, -bh*0.15, S*0.08);
+    g.fillStyle = 'rgba(230,240,250,.5)';
+    for(let i=0;i<4;i++){ const a=seed+i*1.7; g.beginPath(); g.arc(Math.cos(a)*bw*0.5, -bh*0.3+Math.sin(a)*bh*0.2, S*0.035,0,Math.PI*2); g.fill(); }
+    g.strokeStyle = 'rgba(30,40,60,.6)'; g.lineWidth = Math.max(1,S*0.03);
+    g.beginPath(); g.arc(0,bh*0.5,bw*0.3,0.15*Math.PI,0.85*Math.PI); g.stroke();
+  }
+
+  function drawDragon(g,S,seed){
+    const wig = Math.sin(gameTime*5 + seed);
+    const bw = S*0.3, bh = S*0.62;
+    g.fillStyle = '#57c785';
+    for(let i=0;i<5;i++){
+      const a = -Math.PI/2 + (i-2)*0.55 + wig*0.08;
+      g.save(); g.translate(Math.cos(a)*bw*1.2, Math.sin(a)*bh*0.75); g.rotate(a+Math.PI/2);
+      g.beginPath(); g.ellipse(0,0,S*0.07,S*0.2,0,0,Math.PI*2); g.fill();
+      g.restore();
+    }
+    g.strokeStyle = '#2f8f5c'; g.lineWidth = Math.max(2,S*0.07); g.lineCap = 'round';
+    g.beginPath(); g.moveTo(0,-bh*0.6); g.quadraticCurveTo(S*0.25+wig*S*0.06,-bh*1.1, S*0.05,-bh*1.35); g.stroke();
+    const grad = g.createLinearGradient(0,-bh,0,bh);
+    grad.addColorStop(0,'#7fe6a8'); grad.addColorStop(1,'#2f8f5c');
+    g.fillStyle = grad;
+    g.beginPath(); g.ellipse(0,0,bw,bh,0,0,Math.PI*2); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = Math.max(1,S*0.03);
+    for(let i=0;i<3;i++){ g.beginPath(); g.arc(0,bh*0.15+i*bh*0.18,bw*0.7,0.2*Math.PI,0.8*Math.PI); g.stroke(); }
+    g.fillStyle = '#57c785';
+    g.beginPath(); g.ellipse(0,bh*0.55,bw*0.32,bh*0.22,0,0,Math.PI*2); g.fill();
+    creatureEyes(g, bw*0.5, bh*0.1, S*0.09);
   }
 
   function drawFishBody(g,S,color,seed){
@@ -1386,11 +1615,12 @@
     for(const s of [-1,1]){ g.fillStyle='#12303a'; g.beginPath(); g.arc(s*r*0.3,-r*0.5,S*0.05,0,Math.PI*2); g.fill(); }
   }
 
-  function drawShark(g,S,seed){
+  function drawShark(g,S,seed,pal){
+    const P = pal || { top:'#9fb0bd', side:'#6b7c8a', fin:'#4a5966', belly:'#e9eef2', belly2:'#eef3f6', patch:false };
     const wig = Math.sin(gameTime*7 + seed);
     g.save(); g.rotate(wig*0.05);
     const bw = S*0.44, bh = S*0.66, tx = wig*S*0.14;
-    const grey0='#9fb0bd', grey1='#6b7c8a', grey2='#4a5966';
+    const grey0=P.top, grey1=P.side, grey2=P.fin;
     g.fillStyle = grey2;
     g.beginPath(); g.moveTo(0,-bh*0.7); g.lineTo(-S*0.34+tx,-bh*1.3); g.lineTo(S*0.06+tx,-bh*0.95); g.lineTo(S*0.34+tx,-bh*1.35); g.closePath(); g.fill();
     g.fillStyle = grey1;
@@ -1399,11 +1629,15 @@
     g.fillStyle = grey2;
     g.beginPath(); g.moveTo(0,-bh*0.5); g.lineTo(-S*0.06,-bh*0.98); g.lineTo(S*0.12,-bh*0.55); g.closePath(); g.fill();
     const grad = g.createLinearGradient(0,-bh,0,bh);
-    grad.addColorStop(0, grey1); grad.addColorStop(0.6, grey0); grad.addColorStop(1, '#e9eef2');
+    grad.addColorStop(0, grey1); grad.addColorStop(0.6, grey0); grad.addColorStop(1, P.belly);
     g.fillStyle = grad; g.beginPath(); g.ellipse(0,0,bw,bh,0,0,Math.PI*2); g.fill();
-    g.fillStyle = '#eef3f6'; g.beginPath(); g.ellipse(0,bh*0.42,bw*0.6,bh*0.32,0,0,Math.PI*2); g.fill();
+    g.fillStyle = P.belly2; g.beginPath(); g.ellipse(0,bh*0.42,bw*0.6,bh*0.32,0,0,Math.PI*2); g.fill();
     g.strokeStyle = 'rgba(40,60,75,.5)'; g.lineWidth = Math.max(1,S*0.02);
     for(let i=0;i<3;i++){ g.beginPath(); g.arc(-bw*0.4+i*S*0.05,-bh*0.1,S*0.12,-0.4,0.6); g.stroke(); }
+    if(P.patch){
+      g.fillStyle = '#f2f7fa';
+      for(const s of [-1,1]){ g.beginPath(); g.ellipse(s*bw*0.62, -bh*0.02, S*0.09, S*0.15, s*0.5, 0, Math.PI*2); g.fill(); }
+    }
     const er = S*0.08;
     for(const s of [-1,1]){
       g.fillStyle = '#12222b'; g.beginPath(); g.arc(s*bw*0.5,bh*0.18,er,0,Math.PI*2); g.fill();
@@ -1442,13 +1676,18 @@
     g.restore();
   }
 
-  // ---- Sea urchin on the floor
-  function drawUrchin(g, cx, cy, S, seed){
+  // ---- Sea urchin on the floor (styled by cosmetic)
+  function drawUrchin(g, cx, cy, S, seed, st){
     floorShadow(g, cx, cy + S*0.55, S);
     g.save();
     g.translate(cx, cy);
     const puff = 1 + Math.sin(gameTime*3 + seed)*0.03;
-    g.strokeStyle = '#4a2f8f'; g.lineWidth = Math.max(1, S*0.06); g.lineCap = 'round';
+    if(st.glow){
+      const gl = g.createRadialGradient(0,0,S*0.2, 0,0,S*1.15);
+      gl.addColorStop(0, st.glow+'0.4)'); gl.addColorStop(1, st.glow+'0)');
+      g.fillStyle = gl; g.beginPath(); g.arc(0,0,S*1.15,0,Math.PI*2); g.fill();
+    }
+    g.strokeStyle = st.spine; g.lineWidth = Math.max(1, S*0.06); g.lineCap = 'round';
     const spikes = 16;
     for(let i=0;i<spikes;i++){
       const a = (i/spikes)*Math.PI*2 + seed*0.1;
@@ -1456,7 +1695,7 @@
       g.beginPath(); g.moveTo(Math.cos(a)*r1, Math.sin(a)*r1); g.lineTo(Math.cos(a)*r2, Math.sin(a)*r2); g.stroke();
     }
     const grad = g.createRadialGradient(-S*0.2,-S*0.2,S*0.1, 0,0,S*0.6);
-    grad.addColorStop(0,'#9b6bd6'); grad.addColorStop(1,'#5b3aa0');
+    grad.addColorStop(0, st.body[0]); grad.addColorStop(1, st.body[1]);
     g.fillStyle = grad; g.beginPath(); g.arc(0,0,S*0.55*puff,0,Math.PI*2); g.fill();
     g.fillStyle = 'rgba(255,255,255,.5)';
     for(let i=0;i<5;i++){ const a=seed+i*1.3; g.beginPath(); g.arc(Math.cos(a)*S*0.25,Math.sin(a)*S*0.25,S*0.04,0,Math.PI*2); g.fill(); }
@@ -1484,6 +1723,73 @@
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText(POWER_ICON[u.kind], 0, S*0.02);
     g.restore();
+  }
+
+  // ---- passing scenery: coral clusters & tunnel arches
+  function drawDecorItem(g, d){
+    if(d.kind==='arch') drawArch(g, d);
+    else drawCoralCluster(g, d);
+  }
+  function drawCoralCluster(g, d){
+    const p = project(d.side, 0, d.z);
+    const S = PW*0.16*p.scale;
+    floorShadow(g, p.x, p.y + S*0.08, S*0.9);
+    g.save(); g.translate(p.x, p.y);
+    const sway = Math.sin(gameTime*1.5 + d.seed)*0.06;
+    const cols = [['#ff7a59','#ffb08a'],['#c95cbf','#f2a0e8'],['#3fae8a','#8fe6c9']][d.v];
+    g.strokeStyle = cols[0]; g.lineWidth = Math.max(2, S*0.16); g.lineCap = 'round';
+    for(let i=-1;i<=1;i++){
+      g.beginPath(); g.moveTo(i*S*0.25, 0);
+      g.quadraticCurveTo(i*S*0.45 + sway*S, -S*0.6, i*S*0.55 + sway*S*2, -S*(0.95 + 0.15*Math.abs(i)));
+      g.stroke();
+    }
+    g.fillStyle = cols[1];
+    for(let i=-1;i<=1;i++){ g.beginPath(); g.arc(i*S*0.55 + sway*S*2, -S*(0.95+0.15*Math.abs(i)), S*0.12, 0, Math.PI*2); g.fill(); }
+    const grad = g.createRadialGradient(-S*0.1,-S*0.2,S*0.05, 0,0,S*0.5);
+    grad.addColorStop(0, cols[1]); grad.addColorStop(1, cols[0]);
+    g.fillStyle = grad;
+    g.beginPath(); g.ellipse(0, 0, S*0.42, S*0.3, 0, 0, Math.PI*2); g.fill();
+    g.restore();
+  }
+  function drawArch(g, d){
+    const z = Math.max(d.z, 0.03);
+    const bl = project(-1.95, 0, z), br = project(1.95, 0, z);
+    const tl = project(-1.95, 2.6, z), tr = project(1.95, 2.6, z);
+    const peak = project(0, 3.6, z);
+    const w = PW*0.11*bl.scale;
+    floorShadow(g, bl.x, bl.y, w*2.2);
+    floorShadow(g, br.x, br.y, w*2.2);
+    g.save();
+    const rock = g.createLinearGradient(bl.x - w, 0, bl.x + w, 0);
+    rock.addColorStop(0,'#1e3348'); rock.addColorStop(0.5,'#3c5a75'); rock.addColorStop(1,'#16283a');
+    g.fillStyle = rock;
+    archPillar(g, bl, tl, w);
+    const rock2 = g.createLinearGradient(br.x - w, 0, br.x + w, 0);
+    rock2.addColorStop(0,'#16283a'); rock2.addColorStop(0.5,'#3c5a75'); rock2.addColorStop(1,'#1e3348');
+    g.fillStyle = rock2;
+    archPillar(g, br, tr, w);
+    g.strokeStyle = '#33506b';
+    g.lineWidth = w*1.15;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(tl.x, tl.y);
+    g.quadraticCurveTo(peak.x, peak.y, tr.x, tr.y);
+    g.stroke();
+    g.strokeStyle = 'rgba(140,190,225,.25)';
+    g.lineWidth = Math.max(1, w*0.25);
+    g.beginPath();
+    g.moveTo(tl.x, tl.y);
+    g.quadraticCurveTo(peak.x, peak.y - w*0.4, tr.x, tr.y);
+    g.stroke();
+    g.restore();
+  }
+  function archPillar(g, b, t, w){
+    g.beginPath();
+    g.moveTo(b.x - w, b.y);
+    g.lineTo(b.x - w*0.75, t.y);
+    g.lineTo(b.x + w*0.75, t.y);
+    g.lineTo(b.x + w, b.y);
+    g.closePath(); g.fill();
   }
 
   // ---- effect visuals around the turtle
@@ -1660,7 +1966,7 @@
       drawHook(g, o);
     } else {
       const p = project(wx, 0.5, o.z);
-      drawUrchin(g, p.x, p.y, URCHIN_BASE*p.scale, o.seed);
+      drawUrchin(g, p.x, p.y, URCHIN_BASE*p.scale, o.seed, active.urchin);
     }
   }
 
@@ -1670,17 +1976,20 @@
 
     drawBackground();
     drawPath();
+    drawFloor();
 
     // depth-sorted scene: far first
     const scene = [];
     for(const o of obstacles) scene.push({z:o.z, kind:'o', ref:o});
     for(const a of algae) if(!a.taken || a.z>0) scene.push({z:a.z, kind:'a', ref:a});
     for(const u of powerups) if(!u.taken || u.z>0) scene.push({z:u.z, kind:'p', ref:u});
+    for(const d of decors) scene.push({z:d.z, kind:'d', ref:d});
     scene.sort((p,q)=> q.z - p.z);
 
     for(const item of scene){
       if(item.kind==='o') drawObstacle(ctx, item.ref);
       else if(item.kind==='p') drawPowerup(ctx, item.ref);
+      else if(item.kind==='d') drawDecorItem(ctx, item.ref);
       else {
         const a = item.ref;
         const p = project(a.wx, a.bf, a.z);
@@ -1769,7 +2078,7 @@
   }
   function showStart(){
     state = S_START;
-    obstacles = []; algae = []; popups = []; powerups = []; particles = [];
+    obstacles = []; algae = []; popups = []; powerups = []; particles = []; decors = [];
     overScreen.classList.add('hidden');
     shopScreen.classList.add('hidden');
     trophyScreen.classList.add('hidden');
@@ -1890,6 +2199,8 @@
       drawBgPreview(g, w, h, item);
     } else if(cat==='algae'){
       drawAlgae(g, w/2, h*0.66, Math.min(w,h)*0.34, 0.7, item);
+    } else if(cat==='urchin'){
+      drawUrchin(g, w/2, h*0.55, Math.min(w,h)*0.42, 1.2, item);
     } else {
       drawFish(g, w/2, h*0.5, Math.min(w,h)*0.36, '#ff7a45', 1.1, item.style);
     }

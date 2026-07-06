@@ -27,21 +27,37 @@ Die Geschwindigkeit steigt mit der Zeit, der Highscore wird lokal im Browser
 
 ## 🛍️ Kosmetik & Freischaltungen
 
-Über den **Kosmetik-Shop** (vom Startbildschirm erreichbar) lassen sich vier
-Kategorien anpassen — **Schildkröten-Skins**, **Hintergründe**, **Algen-Designs**
-und **Kreaturen** (Fisch-Varianten). Ausgewählte Items werden sofort im Spiel
-angewendet.
+Über den **Kosmetik-Shop** (vom Startbildschirm erreichbar) lassen sich fünf
+Kategorien anpassen — **42 Cosmetics** insgesamt:
 
-Es gibt zwei Freischalt-Bedingungen, gemischt aus schnellen und langfristigen Zielen:
+- 🐢 **12 Schildkröten-Skins** (u. a. Karett- & Landschildkröte, Neon, Mitternacht,
+  Geister-, Kristall- und animierter Regenbogen-Panzer)
+- 🌊 **8 Hintergründe** (Korallenriff, Lagune, Tiefsee, Sonnenuntergang,
+  Sternennacht, Höhle, Eismeer, Abgrund)
+- 🌿 **8 Algen-Designs** · 🐟 **8 Kreaturen** (Fische, Kugelfische, Quallen,
+  Krabben, Rochen, Seedrachen, Haie, Orcas) · 🟣 **6 Seeigel-Varianten**
 
-- **🌿 Algen als Währung** — gesammelte Algen landen in deinem Guthaben und lassen
-  sich im Shop gegen günstige bis teure Items eintauschen (z. B. 60 · 150 · 900 🌿).
-- **🏆 Highscore-Meilensteine** — exklusive Items schalten sich ab einem erreichten
-  Highscore frei (z. B. Landschildkröte ab 2500, Kristallpanzer ab 8000).
+Ausgewählte Items werden sofort im Spiel angewendet. Die Unlocks sind bewusst
+gestaffelt — frühe Items bleiben erreichbar, Top-Items sind Langzeitziele:
+
+- **🌿 Algen als Währung** — von 250 🌿 (Einstieg) bis 8000 🌿 (Regenbogen-Panzer)
+- **🏆 Highscore-Meilensteine** — von 6000 (Landschildkröte) bis 30.000 Punkte
+  (Kristallpanzer)
 
 Jedes Item zeigt klar seinen Zustand (gesperrt / gekauft / ausgewählt) und seine
 Bedingung. Guthaben, Gesamt-Algen, Highscore sowie freigeschaltete und ausgewählte
 Cosmetics werden dauerhaft im `localStorage` gespeichert.
+
+## 🌅 Optik & Spielfläche
+
+- **Pseudo-3D-Perspektive** wie bei Subway Surfers: die drei Spuren laufen
+  deutlich zum Fluchtpunkt hin zusammen, Hindernisse wachsen beim Näherkommen.
+- **Scrollender Meeresboden** mit Sand-Textur: Rippel und Kiesel sind an
+  Welt-Positionen verankert und strömen passend zur Spielgeschwindigkeit
+  auf die Kamera zu.
+- **Vorbeiziehende Kulissen:** Korallenriffe tauchen an den Seiten auf; ab und
+  zu spawnt ein **Felsen-Tunnel** aus mehreren Bögen, durch den die Schildkröte
+  hindurchschwimmt.
 
 ## ⚡ Power-Ups
 
@@ -74,9 +90,9 @@ die **seitlich pendeln**.
   aus", „Erreiche eine 7er-Combo") mit Fortschrittsbalken auf dem Startbildschirm.
   Abschluss belohnt **Bonus-Algen**; sind alle drei erledigt, erscheint automatisch
   ein neuer Satz.
-- **11 Trophäen** für Meilensteine (erste 1000 Punkte, 10er-Combo, alle Power-Ups
-  genutzt, …) mit eigenem Übersichts-Menü — erreichte farbig, offene ausgegraut
-  mit Beschreibung.
+- **16 Trophäen** für Meilensteine (25.000 Punkte, 15er-Combo, 6000 Algen,
+  100 Runden, …) mit eigenem Übersichts-Menü — erreichte farbig, offene
+  ausgegraut mit Beschreibung. Die Anforderungen sind bewusst anspruchsvoll.
 
 Alles (Missionen, Fortschritt, Trophäen, Statistiken) wird im `localStorage`
 gespeichert und überlebt Browser-Neustarts.
