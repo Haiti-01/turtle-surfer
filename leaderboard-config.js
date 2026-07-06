@@ -16,6 +16,6 @@
 // nur ohne Online-Bestenliste (lokaler Highscore als Fallback).
 // ============================================================
 window.LEADERBOARD_CONFIG = {
-  url: '',      // z. B. 'https://abcdefghijkl.supabase.co'
-  anonKey: ''   // z. B. 'eyJhbGciOiJIUzI1NiIs...'
+  url: 'https://cyhxortvlqwxwppwazjg.supabase.co/rest/v1/',      // z. B. 'https://abcdefghijkl.supabase.co'
+  anonKey: 'sb_publishable_k5a1WADrHZm_WvEhgEvnDA_4oHeAOX4'   // z. B. 'eyJhbGciOiJIUzI1NiIs...'
 };
