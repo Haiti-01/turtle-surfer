@@ -2202,12 +2202,17 @@
   function lbHeaders(cfg){
     return { 'apikey': cfg.anonKey, 'Authorization': 'Bearer '+cfg.anonKey, 'Content-Type': 'application/json' };
   }
+  // Accept either the plain project URL or one that already ends in /rest/v1 —
+  // strip trailing slashes and a trailing /rest/v1 so we never double it.
+  function lbBase(cfg){
+    return cfg.url.replace(/\/+$/,'').replace(/\/rest\/v1$/i,'');
+  }
   async function lbFetchTop(){
     const cfg = lbConfig();
     const ctrl = new AbortController();
     const to = setTimeout(()=>ctrl.abort(), 8000);
     try{
-      const res = await fetch(cfg.url.replace(/\/$/,'')
+      const res = await fetch(lbBase(cfg)
         + '/rest/v1/leaderboard?select=name,score&order=score.desc,created_at.asc&limit=20',
         { headers: lbHeaders(cfg), signal: ctrl.signal });
       if(!res.ok) throw new Error('HTTP '+res.status);
@@ -2219,7 +2224,7 @@
     const ctrl = new AbortController();
     const to = setTimeout(()=>ctrl.abort(), 8000);
     try{
-      const res = await fetch(cfg.url.replace(/\/$/,'') + '/rest/v1/rpc/submit_score', {
+      const res = await fetch(lbBase(cfg) + '/rest/v1/rpc/submit_score', {
         method:'POST', headers: lbHeaders(cfg), signal: ctrl.signal,
         body: JSON.stringify({ p_name: name, p_score: score })
       });
