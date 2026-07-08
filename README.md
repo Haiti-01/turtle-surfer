@@ -52,6 +52,11 @@ Cosmetics werden dauerhaft im `localStorage` gespeichert.
 
 - **Pseudo-3D-Perspektive** wie bei Subway Surfers: die drei Spuren laufen
   deutlich zum Fluchtpunkt hin zusammen, Hindernisse wachsen beim Näherkommen.
+- **Durchgehende Vorwärts-Bewegung (Parallax):** alles scrollt kontinuierlich
+  und an die dynamische Spielgeschwindigkeit gekoppelt (schneller bei höherem
+  Tempo, Boost/Zeitlupe inklusive) — mehrschichtig mit Tiefe: Lichtstrahlen als
+  langsame Fern-Ebene, treibende Schwebeteilchen als Mittelebene, Riff-Korallen
+  und Boden als schnelle Nah-Ebene. Nahtlose Endlos-Schleife ohne sichtbare Kante.
 - **Scrollender Meeresboden** mit Sand-Textur: Rippel und Kiesel sind an
   Welt-Positionen verankert und strömen passend zur Spielgeschwindigkeit
   auf die Kamera zu.
