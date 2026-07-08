@@ -1111,13 +1111,18 @@
     // passing scenery (coral reefs, tunnel arches)
     decorAccum += eff * dt;
     if(decorAccum >= decorGap){ decorAccum -= decorGap; spawnDecorEvent(); }
-    for(const d of decors) d.z -= eff * dt;
+    for(const d of decors){
+      d.prevZ = d.z;
+      d.z -= eff * dt;
+      // being on the very top when the tunnel entrance reaches you = crash
+      if(d.kind==='arch' && turtle.band === 2 && d.prevZ > 0 && d.z <= 0) gameOver();
+    }
     decors = decors.filter(d => d.z > -1.4);
 
-    // inside a tunnel the top lane is closed off: push the turtle down and warn once
-    if(tunnelActive()){
-      if(turtle.band === 2) turtle.band = 1;
-      if(!tunnelWarned){ tunnelWarned = true; toast('🚧 Tunnel – nicht auftauchen!'); }
+    // warn early (tunnel is now lethal if you stay up); reset once it has passed
+    const tunnelSoon = decors.some(d => d.kind==='arch' && d.z > -0.7 && d.z < 3.8);
+    if(tunnelSoon){
+      if(!tunnelWarned){ tunnelWarned = true; toast('🚧 Tunnel voraus – nicht ganz oben bleiben!'); }
     } else {
       tunnelWarned = false;
     }
