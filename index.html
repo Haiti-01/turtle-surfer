@@ -159,6 +159,7 @@
   .fx .ic{ font-size:16px; }
   .fx .bar{ width:54px; height:6px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; }
   .fx .bar i{ display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,#7ff0dc,#2bc7ad); }
+  .fx.f-shield .bar i{ background:linear-gradient(90deg,#bfe6ff,#5aa8e0); }
   .fx.f-boost .bar i{ background:linear-gradient(90deg,#ffd54a,#ff8f3c); }
   .fx.f-laser .bar i{ background:linear-gradient(90deg,#ff9db0,#ff4a6b); }
   .fx.f-slow .bar i{ background:linear-gradient(90deg,#b39dff,#7a5cff); }
@@ -242,7 +243,7 @@
   </div>
 
   <div id="fxBar">
-    <div class="fx f-shield" id="fxShield"><span class="ic">🛡️</span><span class="chg">1×</span></div>
+    <div class="fx f-shield" id="fxShield"><span class="ic">🛡️</span><span class="bar"><i></i></span></div>
     <div class="fx f-magnet" id="fxMagnet"><span class="ic">🧲</span><span class="bar"><i></i></span></div>
     <div class="fx f-laser" id="fxLaser"><span class="ic">⚡</span><span class="bar"><i></i></span></div>
     <div class="fx f-boost" id="fxBoost"><span class="ic">🚀</span><span class="bar"><i></i></span></div>
@@ -440,15 +441,17 @@
   // ------------------------------------------------------- power-ups & combo
   let powerups = [];                       // collectible power-ups in the world
   let powerAccum = 0, powerGap = 11;
-  const FX_DUR = { magnet:8, laser:6, boost:4, slow:6 };
-  const fx = { shield:0, magnet:0, laser:0, boost:0, slow:0 };   // shield = charges, rest = seconds
+  const FX_DUR = { shield:10, magnet:8, laser:6, boost:4, slow:6 };  // all timed (seconds)
+  const fx = { shield:0, magnet:0, laser:0, boost:0, slow:0 };   // remaining seconds
   const POWER_KINDS = ['shield','magnet','laser','boost','slow'];
   const POWER_ICON = { shield:'🛡️', magnet:'🧲', laser:'⚡', boost:'🚀', slow:'🐌' };
   const POWER_GLOW = { shield:'rgba(120,220,255,', magnet:'rgba(255,120,120,', laser:'rgba(255,235,120,', boost:'rgba(255,170,80,', slow:'rgba(170,140,255,' };
+  const TIMED_FX = ['shield','magnet','laser','boost','slow'];
   let combo = 0, comboBest = 0;            // consecutive algae without miss/hit
   let particles = [];
   let decors = [];                         // passing scenery: coral reefs & tunnel arches
   let decorAccum = 0, decorGap = 10;
+  let tunnelWarned = false;                // one warning toast per tunnel
 
   // -------------------------------------------------------- cosmetics catalog
   // cond.k: 'free' | 'algae' (cost, buy with balance) | 'score' (score milestone)
@@ -822,12 +825,19 @@
     }
   }
 
+  // a tunnel arch overhead blocks the topmost lane (narrow passage)
+  function tunnelActive(){
+    for(const d of decors){ if(d.kind==='arch' && d.z > -0.7 && d.z < 1.4) return true; }
+    return false;
+  }
+
   // ------------------------------------------------------------------ input
   function move(dir){
     if(state !== S_PLAY) return;
+    const topBand = tunnelActive() ? 1 : 2;   // can't surface fully inside a tunnel
     if(dir==='left'  && turtle.lane>0){ turtle.lane--; sfxMove(); }
     if(dir==='right' && turtle.lane<2){ turtle.lane++; sfxMove(); }
-    if(dir==='up'    && turtle.band<2){ turtle.band++; sfxMove(); }
+    if(dir==='up'    && turtle.band<topBand){ turtle.band++; sfxMove(); }
     if(dir==='down'  && turtle.band>0){ turtle.band--; sfxMove(); }
   }
 
@@ -901,10 +911,9 @@
     boost: { el:document.getElementById('fxBoost') },
     slow:  { el:document.getElementById('fxSlow') },
   };
-  for(const k of ['magnet','laser','boost','slow']) fxEls[k].bar = fxEls[k].el.querySelector('.bar i');
+  for(const k of TIMED_FX) fxEls[k].bar = fxEls[k].el.querySelector('.bar i');
   function updateFxHUD(){
-    fxEls.shield.el.classList.toggle('on', fx.shield > 0);
-    for(const k of ['magnet','laser','boost','slow']){
+    for(const k of TIMED_FX){
       const on = fx[k] > 0;
       fxEls[k].el.classList.toggle('on', on);
       if(on) fxEls[k].bar.style.width = (fx[k]/FX_DUR[k]*100).toFixed(1)+'%';
@@ -912,8 +921,7 @@
   }
 
   function activatePower(kind){
-    if(kind==='shield') fx.shield = 1;
-    else fx[kind] = FX_DUR[kind];
+    fx[kind] = FX_DUR[kind];
     save.stats.powerCount++;
     save.stats.powerTypes[kind] = true;
     missionEvent('power', 1);
@@ -927,7 +935,7 @@
   function resetGame(){
     obstacles = []; algae = []; popups = [];
     powerups = []; particles = []; decors = [];
-    decorAccum = 0; decorGap = 10;
+    decorAccum = 0; decorGap = 10; tunnelWarned = false;
     turtle.lane = 1; turtle.band = 1;
     turtle.laneF = 0; turtle.heightF = 1; turtle.tilt = 0; turtle.laneVel = 0;
     score = 0; speed = 2.2; elapsed = 0; runAlgae = 0;
@@ -990,7 +998,7 @@
     scoreVal.textContent = Math.floor(score);
 
     // power-up timers
-    for(const k of ['magnet','laser','boost','slow']) if(fx[k]>0) fx[k] = Math.max(0, fx[k]-dt);
+    for(const k of TIMED_FX) if(fx[k]>0) fx[k] = Math.max(0, fx[k]-dt);
 
     // spawn
     obstacleAccum += eff * dt;
@@ -1105,6 +1113,14 @@
     if(decorAccum >= decorGap){ decorAccum -= decorGap; spawnDecorEvent(); }
     for(const d of decors) d.z -= eff * dt;
     decors = decors.filter(d => d.z > -1.4);
+
+    // inside a tunnel the top lane is closed off: push the turtle down and warn once
+    if(tunnelActive()){
+      if(turtle.band === 2) turtle.band = 1;
+      if(!tunnelWarned){ tunnelWarned = true; toast('🚧 Tunnel – nicht auftauchen!'); }
+    } else {
+      tunnelWarned = false;
+    }
   }
 
   function updateCommon(dt){

@@ -57,7 +57,8 @@ Cosmetics werden dauerhaft im `localStorage` gespeichert.
   auf die Kamera zu.
 - **Vorbeiziehende Kulissen:** Korallenriffe tauchen an den Seiten auf; ab und
   zu spawnt ein **Felsen-Tunnel** aus mehreren Bögen, durch den die Schildkröte
-  hindurchschwimmt.
+  hindurchschwimmt. Im Tunnel ist die **oberste Ebene gesperrt** (enge Passage):
+  Auftauchen ist blockiert, und wer oben schwimmt, wird nach unten gedrückt.
 
 ## ⚡ Power-Ups
 
@@ -66,7 +67,7 @@ Icon mit Timer-Leiste sichtbar:
 
 | Power-Up | Effekt |
 |----------|--------|
-| 🛡️ Luftblase | Schutzschild — absorbiert genau eine Kollision |
+| 🛡️ Luftblase | Schutzschild — absorbiert eine Kollision, läuft nach 10 s ab |
 | 🧲 Magnet | zieht 8 s lang alle Algen automatisch an |
 | ⚡ Laser | zerstört 6 s lang alle entgegenkommenden Hindernisse |
 | 🚀 Turbo | 4 s Geschwindigkeitsschub, doppelte Punkte, unverwundbar |
